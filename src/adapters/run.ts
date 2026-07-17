@@ -1,8 +1,8 @@
 import { spawnSync } from 'node:child_process'
-import { adapterEngine, type AdapterId } from '../config/project-root.js'
+import { adapterEngine, type FeAdapterId } from '../config/project-root.js'
 
 export function runAdapterEngine(opts: {
-  adapter: AdapterId
+  adapter: FeAdapterId
   kind: 'codegen' | 'unitgen'
   script: 'generate.mjs' | 'validate-registry.mjs'
   projectRoot: string

@@ -1,13 +1,19 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { FE_SKILLS } from './harness.js'
-import type { AdapterId } from '../config/project-root.js'
+import { BE_SKILLS, FE_SKILLS } from './harness.js'
+import type {
+  BeAdapterId,
+  CodegenType,
+  FeAdapterId,
+} from '../config/project-root.js'
 
 const NON_PORTABLE = /(\.\.\/|~\/|\/home\/|[A-Za-z]:\\|\\\\)/
 
 export function mergePlatformRepos(opts: {
   projectRoot: string
-  adapter: AdapterId
+  type: CodegenType
+  feAdapter?: FeAdapterId
+  beAdapter?: BeAdapterId
 }): { path: string; mergedSkills: string[]; warnings: string[] } {
   const root = path.resolve(opts.projectRoot)
   const file = path.join(root, 'platform-repos.json')
@@ -15,14 +21,13 @@ export function mergePlatformRepos(opts: {
   let data: any = existsSync(file)
     ? JSON.parse(readFileSync(file, 'utf8'))
     : {
-        defaultGroup: 'fe',
-        harness: { profiles: { fe: { groups: ['fe'], skills: [] } } },
-        groups: { fe: { description: 'FE current repository', primary: path.basename(root), projects: [path.basename(root)] } },
+        defaultGroup: opts.type === 'fullstack' ? 'fe' : opts.type,
+        harness: { profiles: {} },
+        groups: {},
         projects: {
           [path.basename(root)]: {
             root: '.',
-            role: 'fe',
-            adapter: opts.adapter,
+            role: opts.type,
             repo: path.basename(root),
             write: true,
           },
@@ -33,17 +38,29 @@ export function mergePlatformRepos(opts: {
   }
   data.harness ??= {}
   data.harness.profiles ??= {}
-  data.harness.profiles.fe ??= { groups: ['fe'], skills: [] }
-  const skills: string[] = data.harness.profiles.fe.skills ?? []
   const merged: string[] = []
-  for (const id of FE_SKILLS) {
-    if (!skills.includes(id)) {
-      skills.push(id)
-      merged.push(id)
+  const profiles: Array<'fe' | 'be'> =
+    opts.type === 'fullstack' ? ['fe', 'be'] : [opts.type]
+  for (const profile of profiles) {
+    data.groups ??= {}
+    data.groups[profile] ??= {
+      description: `${profile.toUpperCase()} current repository`,
+      primary: path.basename(root),
+      projects: [path.basename(root)],
     }
+    data.harness.profiles[profile] ??= { groups: [profile], skills: [] }
+    const skills: string[] = data.harness.profiles[profile].skills ?? []
+    const owned = profile === 'fe' ? FE_SKILLS : BE_SKILLS
+    for (const id of owned) {
+      if (!skills.includes(id)) {
+        skills.push(id)
+        merged.push(id)
+      }
+    }
+    data.harness.profiles[profile].skills = skills
+    data.harness.profiles[profile].adapter =
+      profile === 'fe' ? opts.feAdapter : opts.beAdapter
   }
-  data.harness.profiles.fe.skills = skills
-  data.harness.profiles.fe.adapter = opts.adapter
   writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`)
   return { path: file, mergedSkills: merged, warnings }
 }

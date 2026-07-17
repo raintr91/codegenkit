@@ -1,10 +1,17 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { packageRoot, type AdapterId } from '../config/project-root.js'
+import {
+  packageRoot,
+  type BeAdapterId,
+  type CodegenType,
+  type FeAdapterId,
+} from '../config/project-root.js'
 
 export function installCursorMcp(opts: {
   projectRoot: string
-  adapter: AdapterId
+  type: CodegenType
+  feAdapter?: FeAdapterId
+  beAdapter?: BeAdapterId
   docsRoot?: string
 }): { path: string; written: boolean } {
   const root = path.resolve(opts.projectRoot)
@@ -21,8 +28,10 @@ export function installCursorMcp(opts: {
   if (!config.mcpServers) config.mcpServers = {}
   const env: Record<string, string> = {
     CODEGENKIT_ROOT: root,
-    CODEGENKIT_ADAPTER: opts.adapter,
+    CODEGENKIT_TYPE: opts.type,
   }
+  if (opts.feAdapter) env.CODEGENKIT_FE_ADAPTER = opts.feAdapter
+  if (opts.beAdapter) env.CODEGENKIT_BE_ADAPTER = opts.beAdapter
   if (opts.docsRoot) env.CODEGENKIT_DOCS_ROOT = path.resolve(opts.docsRoot)
   const entry = {
     type: 'stdio',

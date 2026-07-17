@@ -1,0 +1,11 @@
+from typing import Any
+
+from app.common.presenters.base import BasePresenter
+
+
+class {{ entity_pascal }}Presenter(BasePresenter):
+  def __init__(self, item: dict[str, Any]) -> None:
+    self._item = item
+
+  def to_contract(self) -> dict[str, Any]:
+    return dict(self._item)

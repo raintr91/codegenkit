@@ -1,7 +1,7 @@
 {
   "name": "@platform/codegenkit",
-  "version": "0.1.0",
-  "description": "Local MCP: FE portal/unit codegen adapters (Nuxt 4 / Next.js)",
+  "version": "0.2.0",
+  "description": "Local MCP: FE/BE codegen adapters (Nuxt, Next, FastAPI, Laravel)",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {

@@ -1,13 +1,16 @@
 import {
   packageRoot,
   packageVersion,
-  resolveAdapter,
+  resolveBeAdapter,
+  resolveFeAdapter,
   resolveProjectRoot,
+  resolveType,
 } from './config/project-root.js'
 import { installCursorMcp } from './install/cursor-mcp.js'
-import { FE_SKILLS, installHarness } from './install/harness.js'
+import { BE_SKILLS, FE_SKILLS, installHarness } from './install/harness.js'
 import { mergePlatformRepos } from './install/platform-repos.js'
 import { runAdapterEngine } from './adapters/run.js'
+import { runBeEngine } from './adapters/run-be.js'
 
 function arg(name: string): string | undefined {
   const eq = process.argv.find((value) => value.startsWith(`${name}=`))
@@ -21,6 +24,8 @@ function has(name: string): boolean {
 }
 
 function passthrough(after: string): string[] {
+  const separator = process.argv.indexOf('--')
+  if (separator >= 0) return process.argv.slice(separator + 1)
   const index = process.argv.indexOf(after)
   return index >= 0 ? process.argv.slice(index + 1) : process.argv.slice(3)
 }
@@ -29,13 +34,17 @@ function usage(): never {
   console.log(`codegenkit ${packageVersion()}
 
   init --type=fe --adapter=nuxt4|nextjs [--project-root <path>] [--docs-root <path>] [--force] [--yes]
+  init --type=be --adapter=fastapi|laravel [--project-root <path>] [--force] [--yes]
+  init --type=fullstack --fe-adapter=nuxt4|nextjs --be-adapter=fastapi|laravel …
   gen|gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
   unit-gen|unit-gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
+  api-gen|api-gen:dry [--adapter=fastapi|laravel] [--project-root=…] -- --spec <path>
   registry|unit-registry [--adapter=…] [--project-root=…]
   version
 
 Owned FE skills: ${FE_SKILLS.map((id) => `/${id}`).join(' ')}
-Docs hub init is forbidden.
+Owned BE skills: ${BE_SKILLS.map((id) => `/${id}`).join(' ')}
+Docs/tests init is forbidden.
 `)
   process.exit(1)
 }
@@ -55,26 +64,59 @@ async function main(): Promise<void> {
     return
   }
   if (command === 'init') {
-    const type = arg('--type') ?? 'fe'
-    if (type !== 'fe') throw new Error('codegenkit only supports --type=fe (docs hub forbidden)')
-    const adapter = resolveAdapter(arg('--adapter'))
+    const type = resolveType(arg('--type'))
+    const feAdapter =
+      type === 'be'
+        ? undefined
+        : resolveFeAdapter(arg('--fe-adapter') ?? arg('--adapter'))
+    const beAdapter =
+      type === 'fe'
+        ? undefined
+        : resolveBeAdapter(arg('--be-adapter') ?? arg('--adapter'))
     const root = resolveProjectRoot(arg('--project-root'))
     const docsRoot = arg('--docs-root')
-    const mcp = installCursorMcp({ projectRoot: root, adapter, docsRoot })
+    const mcp = installCursorMcp({
+      projectRoot: root,
+      type,
+      feAdapter,
+      beAdapter,
+      docsRoot,
+    })
     console.log(`${mcp.written ? 'wrote' : 'unchanged'}: ${mcp.path}`)
-    const harness = installHarness({ projectRoot: root, adapter, force: has('--force') })
+    const harness = installHarness({
+      projectRoot: root,
+      type,
+      feAdapter,
+      beAdapter,
+      force: has('--force'),
+    })
     for (const file of harness.written) console.log(`  wrote: ${file}`)
     for (const file of harness.unchanged) console.log(`  unchanged: ${file}`)
     for (const file of harness.conflicts) console.log(`  conflict: ${file}`)
-    const maps = mergePlatformRepos({ projectRoot: root, adapter })
+    const maps = mergePlatformRepos({
+      projectRoot: root,
+      type,
+      feAdapter,
+      beAdapter,
+    })
     console.log(`updated: ${maps.path}`)
     for (const warning of maps.warnings) console.warn(`warning: ${warning}`)
     return
   }
 
-  const adapter = resolveAdapter(arg('--adapter'))
   const root = resolveProjectRoot(arg('--project-root'))
   const docsRoot = arg('--docs-root')
+  if (command === 'api-gen' || command === 'api-gen:dry') {
+    printResult(
+      runBeEngine({
+        adapter: resolveBeAdapter(arg('--be-adapter') ?? arg('--adapter')),
+        projectRoot: root,
+        argv: passthrough(command),
+        dryRun: command === 'api-gen:dry' || has('--dry-run'),
+      }),
+    )
+  }
+  const adapter = resolveFeAdapter(arg('--fe-adapter') ?? arg('--adapter'))
   if (command === 'gen' || command === 'gen:dry') {
     printResult(
       runAdapterEngine({

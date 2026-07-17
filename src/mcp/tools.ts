@@ -1,7 +1,12 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { resolveAdapter, resolveProjectRoot } from '../config/project-root.js'
+import {
+  resolveBeAdapter,
+  resolveFeAdapter,
+  resolveProjectRoot,
+} from '../config/project-root.js'
 import { runAdapterEngine } from '../adapters/run.js'
+import { runBeEngine } from '../adapters/run-be.js'
 
 function text(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] }
@@ -27,7 +32,7 @@ export function registerTools(server: McpServer): void {
     server.tool(name, description, commonShape(), async (input) => {
       try {
         const result = runAdapterEngine({
-          adapter: resolveAdapter(input.adapter),
+          adapter: resolveFeAdapter(input.adapter),
           kind,
           script,
           projectRoot: resolveProjectRoot(input.projectRoot),
@@ -74,5 +79,50 @@ export function registerTools(server: McpServer): void {
     'Validate FE unit registries.',
     'unitgen',
     'validate-registry.mjs',
+  )
+
+  server.tool(
+    'api_gen',
+    'Run backend API generation using the FastAPI or Laravel adapter.',
+    {
+      adapter: z.enum(['fastapi', 'laravel']).optional(),
+      projectRoot: z.string().optional(),
+      argv: z.array(z.string()).optional(),
+    },
+    async (input) => {
+      try {
+        const result = runBeEngine({
+          adapter: resolveBeAdapter(input.adapter),
+          projectRoot: resolveProjectRoot(input.projectRoot),
+          argv: input.argv,
+        })
+        return text({ ok: result.status === 0, ...result })
+      } catch (error) {
+        return text({ ok: false, error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+  )
+
+  server.tool(
+    'api_gen_dry',
+    'Dry-run backend API generation using the FastAPI or Laravel adapter.',
+    {
+      adapter: z.enum(['fastapi', 'laravel']).optional(),
+      projectRoot: z.string().optional(),
+      argv: z.array(z.string()).optional(),
+    },
+    async (input) => {
+      try {
+        const result = runBeEngine({
+          adapter: resolveBeAdapter(input.adapter),
+          projectRoot: resolveProjectRoot(input.projectRoot),
+          argv: input.argv,
+          dryRun: true,
+        })
+        return text({ ok: result.status === 0, ...result })
+      } catch (error) {
+        return text({ ok: false, error: error instanceof Error ? error.message : String(error) })
+      }
+    },
   )
 }

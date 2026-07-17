@@ -27,7 +27,7 @@ function resolveDocsProductRoot() {
       return path.join(resolveProjectRoot(root, 'base-docs'), 'product')
     } catch {
       throw new Error(
-        'Set CODEGENKIT_DOCS_ROOT or pass --yaml-root; sibling ../base-docs is no longer assumed',
+        'Set CODEGENKIT_DOCS_ROOT or pass --yaml-root; no sibling docs hub is assumed',
       )
     }
   }

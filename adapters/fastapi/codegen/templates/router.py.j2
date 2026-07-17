@@ -1,0 +1,67 @@
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.common.http.api_response import success
+from app.modules.{{ module_kebab }}.{{ entity_snake }}.presenters.{{ entity_snake }}_presenter import {{ entity_pascal }}Presenter
+from app.modules.{{ module_kebab }}.{{ entity_snake }}.schemas.request import (
+{% if wire.search %}  {{ entity_pascal }}SearchRequest,
+{% endif %}
+{% if wire.create %}  {{ entity_pascal }}CreateRequest,
+{% endif %}
+{% if wire.update %}  {{ entity_pascal }}UpdateRequest,
+{% endif %}
+)
+{% if wire.search %}from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.search_service import {{ entity_pascal }}SearchService
+{% endif %}
+{% if wire.create %}from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.create_service import {{ entity_pascal }}CreateService
+{% endif %}
+{% if wire.update %}from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.update_service import {{ entity_pascal }}UpdateService
+{% endif %}
+{% if wire.delete %}from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.delete_service import {{ entity_pascal }}DeleteService
+{% endif %}
+
+router = APIRouter(prefix="{{ route_prefix }}", tags=["{{ module_kebab }}"])
+{% if wire.search %}_search = {{ entity_pascal }}SearchService()
+{% endif %}
+{% if wire.create %}_create = {{ entity_pascal }}CreateService()
+{% endif %}
+{% if wire.update %}_update = {{ entity_pascal }}UpdateService()
+{% endif %}
+{% if wire.delete %}_delete = {{ entity_pascal }}DeleteService()
+{% endif %}
+
+
+{% if wire.search %}
+@router.get("")
+async def search_{{ entity_snake }}(query: {{ entity_pascal }}SearchRequest = Depends()) -> dict:
+  items, total = await _search.search(query)
+  data = {"items": [{{ entity_pascal }}Presenter(i).to_contract() for i in items], "total": total}
+  return success(data, message="Retrieved successfully", meta={"pagination": {"page": query.page, "per_page": query.per_page, "total": total}})
+{% endif %}
+
+
+{% if wire.create %}
+@router.post("")
+async def create_{{ entity_snake }}(body: {{ entity_pascal }}CreateRequest) -> dict:
+  item = await _create.create(body)
+  return success({{ entity_pascal }}Presenter(item).to_contract(), message="Created successfully", code=201)
+{% endif %}
+
+
+{% if wire.update %}
+@router.patch("/{id}")
+async def update_{{ entity_snake }}(id: int, body: {{ entity_pascal }}UpdateRequest) -> dict:
+  item = await _update.update(id, body)
+  if item is None:
+    raise HTTPException(status_code=404, detail="Not Found")
+  return success({{ entity_pascal }}Presenter(item).to_contract(), message="Updated successfully")
+{% endif %}
+
+
+{% if wire.delete %}
+@router.delete("/{id}")
+async def delete_{{ entity_snake }}(id: int) -> dict:
+  ok = await _delete.delete(id)
+  if not ok:
+    raise HTTPException(status_code=404, detail="Not Found")
+  return success({"success": True})
+{% endif %}

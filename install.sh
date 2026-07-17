@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-REPO="${CODEGENKIT_REPO:-raintr91/Codegenkit}"
+REPO="${CODEGENKIT_REPO:-raintr91/codegenkit}"
 INSTALL_DIR="${CODEGENKIT_INSTALL_DIR:-$HOME/.codegenkit}"
 BIN_DIR="${CODEGENKIT_BIN_DIR:-$HOME/.local/bin}"
 REF="${CODEGENKIT_REF:-main}"
@@ -24,4 +24,7 @@ mkdir -p "$BIN_DIR"
 ln -sf "$INSTALL_DIR/bin/codegenkit.mjs" "$BIN_DIR/codegenkit"
 ln -sf "$INSTALL_DIR/bin/codegenkit-mcp.mjs" "$BIN_DIR/codegenkit-mcp"
 chmod +x "$INSTALL_DIR/bin/"*.mjs
-echo "Installed Codegenkit. Next: codegenkit init --type=fe --adapter=nuxt4 --yes"
+echo "Installed Codegenkit. Next:"
+echo "  FE: codegenkit init --type=fe --adapter=nuxt4 --yes"
+echo "  BE: codegenkit init --type=be --adapter=fastapi --yes"
+echo "  Fullstack: codegenkit init --type=fullstack --fe-adapter=nuxt4 --be-adapter=fastapi --yes"

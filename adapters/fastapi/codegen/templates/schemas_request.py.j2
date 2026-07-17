@@ -1,0 +1,26 @@
+from pydantic import BaseModel, Field
+
+
+class {{ entity_pascal }}SearchRequest(BaseModel):
+  page: int = Field(default=1, ge=1)
+  per_page: int = Field(default=20, ge=1, le=100)
+
+
+{% if wire.create %}
+class {{ entity_pascal }}CreateRequest(BaseModel):
+{% for field in field_names %}
+{% if field != 'id' %}
+  {{ field }}: str | None = None
+{% endif %}
+{% endfor %}
+{% endif %}
+
+
+{% if wire.update %}
+class {{ entity_pascal }}UpdateRequest(BaseModel):
+{% for field in field_names %}
+{% if field != 'id' %}
+  {{ field }}: str | None = None
+{% endif %}
+{% endfor %}
+{% endif %}

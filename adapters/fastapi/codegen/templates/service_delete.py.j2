@@ -1,0 +1,10 @@
+from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.search_service import _STORE
+
+
+class {{ entity_pascal }}DeleteService:
+  async def delete(self, resource_id: int) -> bool:
+    for idx, row in enumerate(_STORE):
+      if row.get("id") == resource_id:
+        _STORE.pop(idx)
+        return True
+    return False

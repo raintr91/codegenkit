@@ -1,8 +1,12 @@
 param(
   [string]$InstallDir = "$HOME\.codegenkit",
   [string]$Ref = "main",
+  [ValidateSet("fe", "be", "fullstack")]
+  [string]$Type = "fe",
   [ValidateSet("nuxt4", "nextjs")]
-  [string]$Adapter = "nuxt4",
+  [string]$FeAdapter = "nuxt4",
+  [ValidateSet("fastapi", "laravel")]
+  [string]$BeAdapter = "fastapi",
   [switch]$Uninstall
 )
 
@@ -38,4 +42,10 @@ New-Item -ItemType Directory -Force $BinDir | Out-Null
   Set-Content "$BinDir\codegenkit-mcp.cmd"
 
 Write-Host "Installed Codegenkit. Next:"
-Write-Host "  codegenkit init --type=fe --adapter=$Adapter --yes"
+if ($Type -eq "fe") {
+  Write-Host "  codegenkit init --type=fe --adapter=$FeAdapter --yes"
+} elseif ($Type -eq "be") {
+  Write-Host "  codegenkit init --type=be --adapter=$BeAdapter --yes"
+} else {
+  Write-Host "  codegenkit init --type=fullstack --fe-adapter=$FeAdapter --be-adapter=$BeAdapter --yes"
+}

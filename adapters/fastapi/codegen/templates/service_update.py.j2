@@ -1,0 +1,11 @@
+from app.modules.{{ module_kebab }}.{{ entity_snake }}.schemas.request import {{ entity_pascal }}UpdateRequest
+from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.search_service import _STORE
+
+
+class {{ entity_pascal }}UpdateService:
+  async def update(self, resource_id: int, body: {{ entity_pascal }}UpdateRequest) -> dict | None:
+    for row in _STORE:
+      if row.get("id") == resource_id:
+        row.update(body.model_dump(exclude_none=True))
+        return row
+    return None
