@@ -1,0 +1,19 @@
+<?php
+
+namespace {{moduleNamespace}}\Tests\Unit\Http\Requests;
+
+use {{phpFqcn searchRequestFqcn}};
+use Tests\Unit\Concerns\AssertsSearchRequestPagination;
+use Tests\Unit\UnitTestCase;
+
+class {{entity}}SearchRequestDefaultPerPageBehaviorTest extends UnitTestCase
+{
+    use AssertsSearchRequestPagination;
+
+    public function test_search_request_default_max_per_page_matches_spec(): void
+    {
+        $request = new {{phpFqcn searchRequestFqcn}}();
+
+        $this->assertSearchRequestMaxPerPage($request, {{perPageDefault}});
+    }
+}

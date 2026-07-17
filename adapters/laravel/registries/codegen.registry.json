@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "description": "API backend codegen tag registry — mirror portal-design.registry.json for #gen:* / #manual-* / domain tags.",
+  "tagPrefixes": {
+    "gen": "#gen:",
+    "skipGen": "#skip-gen:",
+    "manualAction": "#manual-action:",
+    "manualService": "#manual-service:",
+    "manualTest": "#manual-test:",
+    "callExternal": "#call-external",
+    "crossEntityService": "#cross-entity-service",
+    "derivedData": "#derived-data"
+  },
+  "profiles": {
+    "crud-standard": {
+      "description": "New module — m:module + m:model + m:controller wizard + m:module-test",
+      "defaultGenTags": ["#gen:module", "#gen:crud", "#gen:test-module", "#gen:test-unit"]
+    },
+    "patch": {
+      "description": "Existing module — add:action / add:select-item per endpoint",
+      "defaultGenTags": []
+    }
+  },
+  "wireMap": {
+    "search": "wire-search",
+    "detail": "wire-detail",
+    "create": "wire-create",
+    "update": "wire-update",
+    "delete": "wire-delete",
+    "bulk-delete": "wire-delete",
+    "select-items": "select-items"
+  },
+  "genTags": {
+    "#gen:module": {
+      "phase": "codegen",
+      "layer": "module",
+      "commandId": "module",
+      "artisan": "m:module {module}",
+      "extract": "codegen.md"
+    },
+    "#gen:model-platform": {
+      "phase": "codegen",
+      "layer": "model",
+      "commandId": "model",
+      "artisan": "m:model {entity} Platform --create-migration=yes --create-factory=yes --skip-questions",
+      "extract": "codegen.md"
+    },
+    "#gen:model-tenant": {
+      "phase": "codegen",
+      "layer": "model",
+      "commandId": "model",
+      "artisan": "m:model {entity} Tenant --create-migration=yes --create-factory=yes --skip-questions",
+      "extract": "codegen.md"
+    },
+    "#gen:crud": {
+      "phase": "codegen",
+      "layer": "controller",
+      "commandId": "controller-wizard",
+      "artisan": "m:controller {module} {entity} ...",
+      "extract": "codegen.md"
+    },
+    "#gen:select-items": {
+      "phase": "codegen",
+      "layer": "controller",
+      "commandId": "select-items",
+      "artisan": "add:select-item {module} {entity}",
+      "extract": "codegen.md"
+    },
+    "#gen:auth-api": {
+      "phase": "codegen",
+      "layer": "auth",
+      "commandId": "auth-api",
+      "artisan": "m:auth-api",
+      "extract": "codegen.md"
+    },
+    "#gen:test-module": {
+      "phase": "codegen",
+      "layer": "tests",
+      "commandId": "module-test",
+      "artisan": "m:module-test {module} --type=all",
+      "extract": "codegen.md"
+    },
+    "#gen:test-unit": {
+      "phase": "codegen",
+      "layer": "tests",
+      "commandId": "unit-gen",
+      "note": "Runs api:unit-gen after api:gen (enriched + behavioral templates)",
+      "extract": "api-unit-test-tags.md"
+    },
+    "#gen:test-smoke": {
+      "phase": "codegen",
+      "layer": "tests",
+      "commandId": "module",
+      "note": "Included with m:module route smoke tests",
+      "extract": "codegen.md"
+    }
+  },
+  "prefixRules": {
+    "#gen:action-": {
+      "phase": "codegen",
+      "layer": "controller",
+      "profile": "patch",
+      "artisan": "add:action {module} {entity} {action}",
+      "extract": "api-codegen-tags.md"
+    },
+    "#gen:create-or-update:": {
+      "phase": "codegen",
+      "layer": "setting",
+      "artisan": "m:add-createOrUpdate {module} {entity} {relation} {method}",
+      "extract": "api-codegen-tags.md"
+    },
+    "#skip-gen:": {
+      "phase": "codegen",
+      "layer": "skip",
+      "mapsTo": "codegen.skip",
+      "extract": "api-codegen-tags.md"
+    },
+    "#manual-action:": {
+      "phase": "handoff",
+      "owner": "agent",
+      "layer": "action",
+      "extract": "entity-relationship.md"
+    },
+    "#manual-service:": {
+      "phase": "handoff",
+      "owner": "agent",
+      "layer": "service",
+      "extract": "call-external.md"
+    },
+    "#manual-test:": {
+      "phase": "handoff",
+      "owner": "unit",
+      "layer": "tests",
+      "extract": "unit-coverage.md"
+    }
+  },
+  "domainTags": {
+    "#call-external": {
+      "phase": "spec",
+      "owner": "grill",
+      "requires": ["externalCalls"],
+      "extract": "call-external.md"
+    },
+    "#cross-entity-service": {
+      "phase": "spec",
+      "owner": "grill",
+      "requires": ["services"],
+      "extract": "cross-entity-service.md"
+    },
+    "#derived-data": {
+      "phase": "spec",
+      "owner": "api-update-spec",
+      "requires": ["derivedData"],
+      "extract": "derived-data.md"
+    },
+    "#webhook-inbound": {
+      "phase": "spec",
+      "owner": "grill-integration-spec",
+      "requires": [],
+      "extract": "api-integration-spec.md"
+    },
+    "#webhook-outbound": {
+      "phase": "spec",
+      "owner": "grill-integration-spec",
+      "requires": ["externalCalls"],
+      "extract": "api-integration-spec.md"
+    },
+    "#partner-api": {
+      "phase": "spec",
+      "owner": "grill-integration-spec",
+      "requires": [],
+      "extract": "api-integration-spec.md"
+    },
+    "#public-api": {
+      "phase": "spec",
+      "owner": "grill-integration-spec",
+      "requires": [],
+      "extract": "api-integration-spec.md"
+    }
+  },
+  "aliases": {
+    "gen module": "#gen:module",
+    "model platform": "#gen:model-platform",
+    "model tenant": "#gen:model-tenant",
+    "crud wizard": "#gen:crud",
+    "module test": "#gen:test-module",
+    "call external": "#call-external",
+    "cross entity service": "#cross-entity-service"
+  }
+}

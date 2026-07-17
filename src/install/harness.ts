@@ -67,12 +67,22 @@ export function installHarness(opts: {
     : null
   const result = { written: [] as string[], unchanged: [] as string[], conflicts: [] as string[] }
   const files: Manifest['files'] = { ...(previous?.files ?? {}) }
+  const sources = profiles.map((profile) => ({
+    root: path.join(packageRoot(), 'harness', profile),
+    targetPrefix: '.cursor',
+  }))
+  if (profiles.includes('be') && opts.beAdapter) {
+    sources.push({
+      root: path.join(packageRoot(), 'adapters', opts.beAdapter, 'registries'),
+      targetPrefix: 'registries',
+    })
+  }
 
-  for (const profile of profiles) {
-    const sourceRoot = path.join(packageRoot(), 'harness', profile)
+  for (const entry of sources) {
+    const sourceRoot = entry.root
     for (const source of walk(sourceRoot)) {
       const rel = path.relative(sourceRoot, source)
-      const targetRel = path.join('.cursor', rel).split(path.sep).join('/')
+      const targetRel = path.join(entry.targetPrefix, rel).split(path.sep).join('/')
       const target = path.join(root, targetRel)
       const content = readFileSync(source, 'utf8')
       files[targetRel] = {

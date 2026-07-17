@@ -56,8 +56,8 @@ def _update_generated_routers(plan: dict) -> None:
   root = repo_root()
   routers_file = root / "src" / "app" / "generated_routers.py"
   import_line = (
-    f"from app.modules.{ctx['module_kebab']}.{ctx['entity_snake']}.router import "
-    f"router as {ctx['module_kebab'].replace('-', '_')}_{ctx['entity_snake']}_router"
+    f"from app.modules.{ctx['module_package']}.{ctx['entity_snake']}.router import "
+    f"router as {ctx['module_package']}_{ctx['entity_snake']}_router"
   )
 
   imports: list[str] = []

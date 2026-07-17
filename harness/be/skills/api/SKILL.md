@@ -17,10 +17,17 @@ codegenkit api-gen --adapter=fastapi -- --spec /path/to/ir/spec.yaml
 
 codegenkit api-gen:dry --adapter=laravel -- --spec /path/to/ir/spec.yaml
 codegenkit api-gen --adapter=laravel -- --spec /path/to/ir/spec.yaml
+
+codegenkit api-unit-gen:dry --adapter=laravel -- --spec /path/to/ir/spec.yaml
+codegenkit api-registry --adapter=laravel
+codegenkit api-unit-registry --adapter=laravel
 ```
 
 The selected backend repository is the only write target. Never infer a sibling
 docs hub or frontend checkout.
+
+Laravel supports the detected `modules-v1` profile only. FastAPI requires an
+explicit Python runtime or target virtual environment.
 
 ## Review requirements
 

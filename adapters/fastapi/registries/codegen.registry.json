@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "description": "FastAPI codegen registry — Jinja2 templates for fast-api-base modules.",
+  "profiles": {
+    "crud-standard": {
+      "defaultGenTags": ["#gen:router", "#gen:schemas", "#gen:search", "#gen:create", "#gen:presenter", "#gen:test"]
+    }
+  },
+  "genTags": {
+    "#gen:router": {
+      "layer": "router",
+      "template": "router.py.j2"
+    },
+    "#gen:schemas": {
+      "layer": "schemas",
+      "templates": ["schemas_request.py.j2", "schemas_response.py.j2"]
+    },
+    "#gen:search": {
+      "layer": "service",
+      "template": "service_search.py.j2",
+      "when": "wire.search"
+    },
+    "#gen:create": {
+      "layer": "service",
+      "template": "service_create.py.j2",
+      "when": "wire.create"
+    },
+    "#gen:update": {
+      "layer": "service",
+      "template": "service_update.py.j2",
+      "when": "wire.update"
+    },
+    "#gen:delete": {
+      "layer": "service",
+      "template": "service_delete.py.j2",
+      "when": "wire.delete"
+    },
+    "#gen:presenter": {
+      "layer": "presenter",
+      "template": "presenter.py.j2"
+    },
+    "#gen:test": {
+      "layer": "test",
+      "template": "test_router.py.j2"
+    }
+  }
+}

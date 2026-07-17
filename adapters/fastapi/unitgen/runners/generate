@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+export PYTHONPATH="${ROOT}/codegen/runners:${ROOT}/unitgen/runners:${ROOT}/registries:${ROOT}/tools:${ROOT}/src"
+exec "${ROOT}/.venv/bin/python" -m fast_unit_gen.cli "$@"

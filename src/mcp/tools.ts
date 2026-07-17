@@ -81,48 +81,41 @@ export function registerTools(server: McpServer): void {
     'validate-registry.mjs',
   )
 
-  server.tool(
-    'api_gen',
-    'Run backend API generation using the FastAPI or Laravel adapter.',
-    {
-      adapter: z.enum(['fastapi', 'laravel']).optional(),
-      projectRoot: z.string().optional(),
-      argv: z.array(z.string()).optional(),
-    },
-    async (input) => {
-      try {
-        const result = runBeEngine({
-          adapter: resolveBeAdapter(input.adapter),
-          projectRoot: resolveProjectRoot(input.projectRoot),
-          argv: input.argv,
-        })
-        return text({ ok: result.status === 0, ...result })
-      } catch (error) {
-        return text({ ok: false, error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-  )
+  const registerBe = (
+    name: string,
+    description: string,
+    kind: 'codegen' | 'unitgen' | 'registry' | 'unit-registry',
+    dryRun = false,
+  ) => {
+    server.tool(
+      name,
+      description,
+      {
+        adapter: z.enum(['fastapi', 'laravel']).optional(),
+        projectRoot: z.string().optional(),
+        argv: z.array(z.string()).optional(),
+      },
+      async (input) => {
+        try {
+          const result = runBeEngine({
+            adapter: resolveBeAdapter(input.adapter),
+            projectRoot: resolveProjectRoot(input.projectRoot),
+            kind,
+            argv: input.argv,
+            dryRun,
+          })
+          return text({ ok: result.status === 0, ...result })
+        } catch (error) {
+          return text({ ok: false, error: error instanceof Error ? error.message : String(error) })
+        }
+      },
+    )
+  }
 
-  server.tool(
-    'api_gen_dry',
-    'Dry-run backend API generation using the FastAPI or Laravel adapter.',
-    {
-      adapter: z.enum(['fastapi', 'laravel']).optional(),
-      projectRoot: z.string().optional(),
-      argv: z.array(z.string()).optional(),
-    },
-    async (input) => {
-      try {
-        const result = runBeEngine({
-          adapter: resolveBeAdapter(input.adapter),
-          projectRoot: resolveProjectRoot(input.projectRoot),
-          argv: input.argv,
-          dryRun: true,
-        })
-        return text({ ok: result.status === 0, ...result })
-      } catch (error) {
-        return text({ ok: false, error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-  )
+  registerBe('api_gen', 'Run backend API generation.', 'codegen')
+  registerBe('api_gen_dry', 'Dry-run backend API generation.', 'codegen', true)
+  registerBe('api_unit_gen', 'Run backend API unit generation.', 'unitgen')
+  registerBe('api_unit_gen_dry', 'Dry-run backend API unit generation.', 'unitgen', true)
+  registerBe('api_registry_validate', 'Validate backend API codegen registry.', 'registry')
+  registerBe('api_unit_registry_validate', 'Validate backend API unit registry.', 'unit-registry')
 }

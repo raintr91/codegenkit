@@ -9,9 +9,13 @@ def infer_wire_from_endpoints(endpoints: list[dict] | None) -> dict[str, bool]:
   return {
     "search": "search" in actions or "list" in actions or "search" in paths or "list" in paths,
     "detail": "detail" in actions or "show" in actions,
-    "create": "create" in actions or any(e.get("method") == "POST" for e in endpoints),
-    "update": "update" in actions or "patch" in actions,
-    "delete": "delete" in actions,
+    "create": "create" in actions or any(str(e.get("method", "")).upper() == "POST" for e in endpoints),
+    "update": "update" in actions or "patch" in actions or any(
+      str(e.get("method", "")).upper() in ("PUT", "PATCH") for e in endpoints
+    ),
+    "delete": "delete" in actions or any(
+      str(e.get("method", "")).upper() == "DELETE" for e in endpoints
+    ),
   }
 
 

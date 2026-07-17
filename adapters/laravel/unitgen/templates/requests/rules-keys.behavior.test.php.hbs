@@ -1,0 +1,19 @@
+<?php
+
+namespace {{moduleNamespace}}\Tests\Unit\Http\Requests;
+
+use {{phpFqcn searchRequestFqcn}};
+use Tests\Unit\Concerns\AssertsRequestRuleKeys;
+use Tests\Unit\UnitTestCase;
+
+class {{entity}}SearchRequestRulesKeysBehaviorTest extends UnitTestCase
+{
+    use AssertsRequestRuleKeys;
+
+    public function test_search_request_rules_contain_spec_keys(): void
+    {
+        $request = new {{phpFqcn searchRequestFqcn}}();
+
+        $this->assertRequestRulesContainKeys($request, {{phpStringArray ruleKeys}});
+    }
+}

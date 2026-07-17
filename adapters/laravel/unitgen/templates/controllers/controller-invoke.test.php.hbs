@@ -1,0 +1,34 @@
+<?php
+
+namespace {{moduleNamespace}}\Tests\Feature\Http\Controllers;
+
+use {{phpFqcn controllerFqcn}};
+use {{phpFqcn entityActionFqcn}};
+use {{phpFqcn entityQueryFqcn}};
+use {{moduleNamespace}}\Tests\Support\ModuleTestSupport;
+use Tests\Unit\UnitTestCase;
+
+class {{entity}}ControllerInvokeTest extends UnitTestCase
+{
+    use ModuleTestSupport;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->bind(
+            {{phpFqcn entityQueryFqcn}}::class,
+            fn () => $this->makeQueryDouble({{phpFqcn entityQueryFqcn}}::class),
+        );
+        $this->app->bind(
+            {{phpFqcn entityActionFqcn}}::class,
+            fn () => $this->makeActionDouble({{phpFqcn entityActionFqcn}}::class),
+        );
+    }
+
+    public function test_public_methods_are_invokable(): void
+    {
+        $controller = $this->app->make({{phpFqcn controllerFqcn}}::class);
+        $this->invokeAllControllerMethods($controller);
+    }
+}

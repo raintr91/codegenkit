@@ -1,0 +1,25 @@
+<?php
+
+namespace {{moduleNamespace}}\Tests\Unit\Http\Resources;
+
+use Illuminate\Http\Request;
+use {{phpFqcn entityResourceFqcn}};
+use {{phpFqcn modelFqcn}};
+use Tests\Unit\UnitTestCase;
+
+class {{entity}}ResourceNestedRelationsBehaviorTest extends UnitTestCase
+{
+    public function test_resource_exposes_nested_relation_when_loaded(): void
+    {
+        $model = new {{phpFqcn modelFqcn}}();
+        $model->forceFill(['id' => 1, 'name' => 'Spec Hotel']);
+
+        $nested = (object) ['id' => 10, 'full_name' => 'Manager A'];
+        $model->setRelation('{{nestedRelationKey}}', collect([$nested]));
+
+        $data = (new {{phpFqcn entityResourceFqcn}}($model))->toArray(Request::create('/admin-test', 'GET'));
+
+        $this->assertArrayHasKey('{{nestedRelationKey}}', $data);
+        $this->assertIsArray($data['{{nestedRelationKey}}']);
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "description": "FastAPI unit test codegen registry.",
+  "layers": {
+    "service": {
+      "template": "test_service.py.j2"
+    },
+    "router": {
+      "template": "test_router.py.j2"
+    }
+  }
+}

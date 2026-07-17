@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, existsSync, writeFileSync } from 'node:fs'
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  existsSync,
+  writeFileSync,
+} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -81,6 +87,8 @@ test('be init syncs API skills with Laravel adapter', () => {
     beAdapter: 'laravel',
   })
   assert.equal(harness.conflicts.length, 0)
+  assert.ok(existsSync(path.join(root, 'registries', 'codegen.registry.json')))
+  assert.ok(existsSync(path.join(root, 'registries', 'unit-test.registry.json')))
   for (const skill of BE_SKILLS) {
     assert.ok(existsSync(path.join(root, '.cursor', 'skills', skill, 'SKILL.md')))
   }
@@ -122,15 +130,30 @@ test('fullstack init syncs FE and BE subsets explicitly', () => {
 
 test('Laravel adapter dry-run is target-contained and non-writing', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-laravel-'))
+  writeFileSync(path.join(root, 'artisan'), '#!/usr/bin/env php\n')
+  writeFileSync(
+    path.join(root, 'composer.json'),
+    JSON.stringify({
+      require: {
+        'laravel/framework': '^12.0',
+        'nwidart/laravel-modules': '^12.0',
+      },
+    }),
+  )
   const spec = path.join(root, 'spec.yaml')
   writeFileSync(
     spec,
     `id: auth-login
-entities:
-  - name: Session
+modules:
+  - name: Admin
+    entities:
+      - name: Session
+        mode: Platform
 api:
   endpoints:
-    - method: POST
+    - id: login
+      action: create
+      method: POST
       path: /api/auth/login
 `,
   )
@@ -141,6 +164,60 @@ api:
     dryRun: true,
   })
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /\[dry\].*Controller\.php/)
-  assert.equal(existsSync(path.join(root, 'app')), false)
+  assert.match(result.stdout, /php artisan m:module Admin/)
+  assert.doesNotMatch(result.stdout, /m:module-test[^\n]+--skip-questions/)
+  assert.equal(existsSync(path.join(root, 'Modules')), false)
+})
+
+test('Laravel adapter refuses unsupported app-layer targets', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-laravel-layer-'))
+  writeFileSync(path.join(root, 'artisan'), '#!/usr/bin/env php\n')
+  writeFileSync(
+    path.join(root, 'composer.json'),
+    JSON.stringify({ require: { 'laravel/framework': '^12.0' } }),
+  )
+  const result = runBeEngine({
+    adapter: 'laravel',
+    projectRoot: root,
+    argv: ['--spec', path.join(root, 'missing.yaml')],
+    dryRun: true,
+  })
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /requires nwidart\/laravel-modules/)
+})
+
+test('BE registry validators use adapter-owned templates and synced registries', () => {
+  for (const adapter of ['fastapi', 'laravel']) {
+    const root = mkdtempSync(path.join(os.tmpdir(), `codegenkit-${adapter}-registry-`))
+    installHarness({
+      projectRoot: root,
+      type: 'be',
+      beAdapter: adapter,
+    })
+    for (const kind of ['registry', 'unit-registry']) {
+      const result = runBeEngine({
+        adapter,
+        projectRoot: root,
+        kind,
+      })
+      assert.equal(result.status, 0, `${adapter}/${kind}: ${result.stderr}`)
+      assert.match(result.stdout, /validate: OK|registry v\d+: OK/)
+    }
+  }
+})
+
+test('FastAPI adapter ships unit generator and rejects invalid Python identifiers', () => {
+  assert.ok(
+    existsSync('adapters/fastapi/unitgen/runners/fast_unit_gen/cli.py'),
+  )
+  const source = readFileSync(
+    'adapters/fastapi/codegen/runners/fast_gen/plan.py',
+    'utf8',
+  )
+  assert.match(source, /isidentifier/)
+  assert.match(source, /module_package/)
+  assert.doesNotMatch(
+    readFileSync('adapters/fastapi/codegen/templates/router.py.j2', 'utf8'),
+    /app\.modules\.\{\{ module_kebab/,
+  )
 })

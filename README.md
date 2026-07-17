@@ -22,6 +22,8 @@ Executable tools:
 - `unit_gen` / `unit_gen_dry`
 - `codegen_registry_validate` / `unit_registry_validate`
 - `api_gen` / `api_gen_dry`
+- `api_unit_gen` / `api_unit_gen_dry`
+- `api_registry_validate` / `api_unit_registry_validate`
 
 Set `CODEGENKIT_DOCS_ROOT` (or `--docs-root`). No sibling docs hub is assumed.
 
@@ -29,3 +31,7 @@ ArtifactGraph is optional for allowlist recommendation only.
 
 The FastAPI adapter runs with `CODEGENKIT_PYTHON`, the target `.venv`, or
 `python3`; its environment needs `typer`, `PyYAML` and `Jinja2`.
+
+The Laravel adapter targets the `modules-v1` layout: Laravel 12 with
+`nwidart/laravel-modules`, `artisan` and `composer.json` at the project root or
+under `src/`. The incompatible app-layer layout is not selected implicitly.

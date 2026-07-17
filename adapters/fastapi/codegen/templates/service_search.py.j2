@@ -1,6 +1,5 @@
-from app.modules.{{ module_kebab }}.{{ entity_snake }}.schemas.request import {{ entity_pascal }}SearchRequest
-
-_STORE: list[dict] = [{"id": 1, "name": "Sample"}]
+from app.modules.{{ module_package }}.{{ entity_snake }}.schemas.request import {{ entity_pascal }}SearchRequest
+from app.modules.{{ module_package }}.{{ entity_snake }}.services.store import _STORE
 
 
 class {{ entity_pascal }}SearchService:

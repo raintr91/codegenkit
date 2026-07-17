@@ -1,0 +1,12 @@
+import pytest
+
+from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.search_service import {{ entity_pascal }}SearchService
+from app.modules.{{ module_kebab }}.{{ entity_snake }}.schemas.request import {{ entity_pascal }}SearchRequest
+
+
+@pytest.mark.asyncio
+async def test_{{ entity_snake }}_search_returns_items():
+  service = {{ entity_pascal }}SearchService()
+  items, total = await service.search({{ entity_pascal }}SearchRequest())
+  assert total >= 0
+  assert isinstance(items, list)

@@ -39,6 +39,8 @@ function usage(): never {
   gen|gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
   unit-gen|unit-gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
   api-gen|api-gen:dry [--adapter=fastapi|laravel] [--project-root=…] -- --spec <path>
+  api-unit-gen|api-unit-gen:dry [--adapter=fastapi|laravel] [--project-root=…] -- --spec <path>
+  api-registry|api-unit-registry [--adapter=fastapi|laravel] [--project-root=…]
   registry|unit-registry [--adapter=…] [--project-root=…]
   version
 
@@ -113,6 +115,27 @@ async function main(): Promise<void> {
         projectRoot: root,
         argv: passthrough(command),
         dryRun: command === 'api-gen:dry' || has('--dry-run'),
+      }),
+    )
+  }
+  if (command === 'api-unit-gen' || command === 'api-unit-gen:dry') {
+    printResult(
+      runBeEngine({
+        adapter: resolveBeAdapter(arg('--be-adapter') ?? arg('--adapter')),
+        projectRoot: root,
+        kind: 'unitgen',
+        argv: passthrough(command),
+        dryRun: command === 'api-unit-gen:dry' || has('--dry-run'),
+      }),
+    )
+  }
+  if (command === 'api-registry' || command === 'api-unit-registry') {
+    printResult(
+      runBeEngine({
+        adapter: resolveBeAdapter(arg('--be-adapter') ?? arg('--adapter')),
+        projectRoot: root,
+        kind: command === 'api-registry' ? 'registry' : 'unit-registry',
+        argv: passthrough(command),
       }),
     )
   }

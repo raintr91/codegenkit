@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "description": "API unit-test codegen patterns — separate from api-codegen.registry.json (#gen:module, #gen:test-module).",
+  "tagPrefixes": {
+    "genTest": "#gen:test-",
+    "needsUnit": "#needs-unit-test:",
+    "skipUnit": "#skip-unit-test:",
+    "testMock": "#test-mock:"
+  },
+  "defaults": {
+    "mockBoundary": "db-factory",
+    "phaseStub": ["moduleTest.stub"],
+    "phaseEnriched": [
+      "support.moduleTestSupport",
+      "request.validationHooks",
+      "controller.invokeAll"
+    ],
+    "phaseBehavioral": [
+      "request.rulesKeys",
+      "request.defaultPerPage",
+      "query.chainScope",
+      "action.relationshipSync",
+      "resource.openapiShape",
+      "resource.nestedRelations"
+    ]
+  },
+  "commonBaselines": {
+    "description": "Repo-wide tests/concerns — never generated per feature",
+    "app": [
+      "src/tests/Unit/UnitTestCase.php",
+      "src/tests/Unit/Requests/BaseRequestValidationTest.php",
+      "src/tests/Unit/Support/Api/ApiResponseTest.php",
+      "src/tests/Unit/Models/Concerns/HasModelContractAssertions.php",
+      "src/tests/Unit/Concerns/ExercisesRequestValidationHooks.php",
+      "src/tests/Unit/Concerns/InvokesControllerMethods.php",
+      "src/tests/Unit/Concerns/AssertsRequestRuleKeys.php",
+      "src/tests/Unit/Concerns/AssertsSearchRequestPagination.php",
+      "src/tests/Unit/Concerns/AssertsResourceOpenApiKeys.php",
+      "src/tests/Unit/Concerns/AssertsQuerySessionScope.php",
+      "src/tests/Unit/Concerns/AssertsActionRelationshipKeys.php"
+    ]
+  },
+  "manualTopicMap": {
+    "relationships": { "patternId": "action.relationshipSync" },
+    "chain-scope": { "patternId": "query.chainScope" },
+    "default-per-page": { "patternId": "request.defaultPerPage" },
+    "nested-managers-resource": { "patternId": "resource.nestedRelations" },
+    "export-open-rate-report": { "patternId": "service.exportOpenRate" },
+    "login-as-handoff": { "patternId": "controller.loginAsHandoff" }
+  },
+  "patterns": {
+    "moduleTest.stub": {
+      "status": "implemented",
+      "genTag": "module-stub",
+      "layer": "stub",
+      "phase": "stub",
+      "command": "m:module-test {module} --type=all",
+      "profiles": ["crud-standard", "patch"],
+      "fallbackTag": null,
+      "note": "Skipped in phase=all when codegen.manifest or workspace already has structural stubs. Force: --phase stub or #gen:test-module-stub"
+    },
+    "support.moduleTestSupport": {
+      "status": "implemented",
+      "genTag": "module-test-support",
+      "layer": "support",
+      "phase": "enriched",
+      "template": "support/ModuleTestSupport.php.hbs",
+      "output": "Modules/{module}/Tests/Support/ModuleTestSupport.php",
+      "profiles": ["crud-standard", "patch"],
+      "fallbackTag": "#needs-unit-test:support:ModuleTestSupport"
+    },
+    "request.validationHooks": {
+      "status": "implemented",
+      "genTag": "request-validation-hooks",
+      "layer": "request",
+      "phase": "enriched",
+      "template": "requests/request-enriched.test.php.hbs",
+      "output": "Modules/{module}/Tests/Unit/Http/Requests/{requestClass}Test.php",
+      "profiles": ["crud-standard", "patch"],
+      "when": { "any": [{ "hasModuleRequests": true }] },
+      "fallbackTag": "#needs-unit-test:request-hooks:{entity}"
+    },
+    "controller.invokeAll": {
+      "status": "implemented",
+      "genTag": "controller-invoke",
+      "layer": "controller-invoke",
+      "phase": "enriched",
+      "template": "controllers/controller-invoke.test.php.hbs",
+      "output": "Modules/{module}/Tests/Feature/Http/Controllers/{entity}ControllerInvokeTest.php",
+      "profiles": ["crud-standard", "patch"],
+      "fallbackTag": "#needs-unit-test:controller-invoke:{entity}"
+    },
+    "request.rulesKeys": {
+      "status": "implemented",
+      "layer": "request",
+      "phase": "behavioral",
+      "template": "requests/rules-keys.behavior.test.php.hbs",
+      "output": "Modules/{module}/Tests/Unit/Http/Requests/{entity}SearchRequestRulesKeysBehaviorTest.php",
+      "profiles": ["crud-standard", "patch"],
+      "when": { "any": [{ "wire": "search" }] },
+      "fallbackTag": "#needs-unit-test:request:{entity}:rules"
+    },
+    "request.defaultPerPage": {
+      "status": "implemented",
+      "layer": "request",
+      "phase": "behavioral",
+      "template": "requests/default-per-page.behavior.test.php.hbs",
+      "output": "Modules/{module}/Tests/Unit/Http/Requests/{entity}SearchRequestDefaultPerPageBehaviorTest.php",
+      "profiles": ["crud-standard", "patch"],
+      "when": { "any": [{ "manualAction": "default-per-page" }] },
+      "fallbackTag": "#needs-unit-test:request:{entity}:default-per-page"
+    },
+    "query.chainScope": {
+      "status": "implemented",
+      "layer": "query",
+      "phase": "behavioral",
+      "when": {
+        "any": [
+          { "manualAction": "chain-scope" },
+          { "entityScope": "bySession" }
+        ]
+      },
+      "template": "queries/chain-scope.behavior.test.php.hbs",
+      "output": "Modules/{module}/Tests/Unit/Http/Queries/{entity}QueryChainScopeBehaviorTest.php",
+      "fallbackTag": "#needs-unit-test:query:{entity}:chain-scope"
+    },
+    "action.relationshipSync": {
+      "status": "implemented",
+      "layer": "action",
+      "phase": "behavioral",
+      "when": {
+        "any": [
+          { "manualAction": "relationships" },
+          { "hasRelationships": true }
+        ]
+      },
+      "template": "actions/relationship-sync.behavior.test.php.hbs",
+      "output": "Modules/{module}/Tests/Unit/Http/Actions/{entity}ActionRelationshipsBehaviorTest.php",
+      "fallbackTag": "#needs-unit-test:action:{entity}:relationships"
+    },
+    "resource.openapiShape": {
+      "status": "implemented",
+      "layer": "resource",
+      "phase": "behavioral",
+      "template": "resources/openapi-shape.behavior.test.php.hbs",
+      "output": "Modules/{module}/Tests/Unit/Http/Resources/{entity}ResourceOpenApiShapeBehaviorTest.php",
+      "profiles": ["crud-standard", "patch"],
+      "fallbackTag": "#needs-unit-test:resource:{entity}:openapi-shape"
+    },
+    "resource.nestedRelations": {
+      "status": "implemented",
+      "layer": "resource",
+      "phase": "behavioral",
+      "when": { "any": [{ "manualAction": "nested-managers-resource" }] },
+      "template": "resources/nested-relations.behavior.test.php.hbs",
+      "output": "Modules/{module}/Tests/Unit/Http/Resources/{entity}ResourceNestedRelationsBehaviorTest.php",
+      "fallbackTag": "#needs-unit-test:resource:{entity}:nested-managers"
+    },
+    "service.exportOpenRate": {
+      "status": "planned",
+      "layer": "service",
+      "phase": "behavioral",
+      "when": { "any": [{ "manualService": "export-open-rate-report" }] },
+      "fallbackTag": "#needs-unit-test:service:export-open-rate-report"
+    },
+    "controller.loginAsHandoff": {
+      "status": "planned",
+      "layer": "controller",
+      "phase": "behavioral",
+      "when": { "any": [{ "manualAction": "login-as-handoff" }] },
+      "fallbackTag": "#needs-unit-test:controller:{entity}:login-as-handoff"
+    }
+  },
+  "fixtures": {
+    "baseRequestValidation": "src/tests/Unit/Requests/BaseRequestValidationTest.php",
+    "apiResponse": "src/tests/Unit/Support/Api/ApiResponseTest.php"
+  },
+  "promotedFeatures": ["chain-hotel"]
+}

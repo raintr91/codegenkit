@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.common.http.api_response import success
-from app.modules.{{ module_kebab }}.{{ entity_snake }}.presenters.{{ entity_snake }}_presenter import {{ entity_pascal }}Presenter
-from app.modules.{{ module_kebab }}.{{ entity_snake }}.schemas.request import (
+from app.modules.{{ module_package }}.{{ entity_snake }}.presenters.{{ entity_snake }}_presenter import {{ entity_pascal }}Presenter
+{% if wire.search or wire.create or wire.update %}
+from app.modules.{{ module_package }}.{{ entity_snake }}.schemas.request import (
 {% if wire.search %}  {{ entity_pascal }}SearchRequest,
 {% endif %}
 {% if wire.create %}  {{ entity_pascal }}CreateRequest,
@@ -10,13 +11,14 @@ from app.modules.{{ module_kebab }}.{{ entity_snake }}.schemas.request import (
 {% if wire.update %}  {{ entity_pascal }}UpdateRequest,
 {% endif %}
 )
-{% if wire.search %}from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.search_service import {{ entity_pascal }}SearchService
 {% endif %}
-{% if wire.create %}from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.create_service import {{ entity_pascal }}CreateService
+{% if wire.search %}from app.modules.{{ module_package }}.{{ entity_snake }}.services.search_service import {{ entity_pascal }}SearchService
 {% endif %}
-{% if wire.update %}from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.update_service import {{ entity_pascal }}UpdateService
+{% if wire.create %}from app.modules.{{ module_package }}.{{ entity_snake }}.services.create_service import {{ entity_pascal }}CreateService
 {% endif %}
-{% if wire.delete %}from app.modules.{{ module_kebab }}.{{ entity_snake }}.services.delete_service import {{ entity_pascal }}DeleteService
+{% if wire.update %}from app.modules.{{ module_package }}.{{ entity_snake }}.services.update_service import {{ entity_pascal }}UpdateService
+{% endif %}
+{% if wire.delete %}from app.modules.{{ module_package }}.{{ entity_snake }}.services.delete_service import {{ entity_pascal }}DeleteService
 {% endif %}
 
 router = APIRouter(prefix="{{ route_prefix }}", tags=["{{ module_kebab }}"])
@@ -40,7 +42,7 @@ async def search_{{ entity_snake }}(query: {{ entity_pascal }}SearchRequest = De
 
 
 {% if wire.create %}
-@router.post("")
+@router.post("", status_code=201)
 async def create_{{ entity_snake }}(body: {{ entity_pascal }}CreateRequest) -> dict:
   item = await _create.create(body)
   return success({{ entity_pascal }}Presenter(item).to_contract(), message="Created successfully", code=201)

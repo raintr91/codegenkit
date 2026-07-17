@@ -2,6 +2,6 @@ from pydantic import BaseModel
 
 
 class {{ entity_pascal }}Resource(BaseModel):
-{% for field in field_names %}
-  {{ field }}: int | str | None = None
+{% for field in field_defs %}
+  {{ field.name }}: {{ field.type }}{% if not field.required %} | None = None{% endif %}
 {% endfor %}

@@ -8,9 +8,9 @@ class {{ entity_pascal }}SearchRequest(BaseModel):
 
 {% if wire.create %}
 class {{ entity_pascal }}CreateRequest(BaseModel):
-{% for field in field_names %}
-{% if field != 'id' %}
-  {{ field }}: str | None = None
+{% for field in field_defs %}
+{% if field.name != 'id' %}
+  {{ field.name }}: {{ field.type }}{% if not field.required %} | None = None{% endif %}
 {% endif %}
 {% endfor %}
 {% endif %}
@@ -18,9 +18,9 @@ class {{ entity_pascal }}CreateRequest(BaseModel):
 
 {% if wire.update %}
 class {{ entity_pascal }}UpdateRequest(BaseModel):
-{% for field in field_names %}
-{% if field != 'id' %}
-  {{ field }}: str | None = None
+{% for field in field_defs %}
+{% if field.name != 'id' %}
+  {{ field.name }}: {{ field.type }} | None = None
 {% endif %}
 {% endfor %}
 {% endif %}

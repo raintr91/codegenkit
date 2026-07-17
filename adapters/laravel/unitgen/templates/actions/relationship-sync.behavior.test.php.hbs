@@ -1,0 +1,50 @@
+<?php
+
+
+
+namespace {{moduleNamespace}}\Tests\Unit\Http\Actions;
+
+
+
+use {{phpFqcn entityActionFqcn}};
+
+use {{phpFqcn modelFqcn}};
+
+use Tests\Unit\Concerns\AssertsActionRelationshipKeys;
+
+use Tests\Unit\UnitTestCase;
+
+
+
+class {{entity}}ActionRelationshipsBehaviorTest extends UnitTestCase
+
+{
+
+    use AssertsActionRelationshipKeys;
+
+
+
+    public function test_model_defines_spec_relationships(): void
+
+    {
+
+        $this->assertModelDefinesRelationships({{phpFqcn modelFqcn}}::class, {{phpStringArray relationshipNames}});
+
+    }
+
+
+
+    public function test_action_uses_entity_model(): void
+
+    {
+
+        $action = new {{phpFqcn entityActionFqcn}}(new {{phpFqcn modelFqcn}}());
+
+
+
+        $this->assertInstanceOf({{phpFqcn entityActionFqcn}}::class, $action);
+
+    }
+
+}
+

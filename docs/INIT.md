@@ -12,5 +12,6 @@ Supported profiles are `fe`, `be`, and explicit `fullstack`. Docs/tests
 profiles must not install Codegenkit.
 
 `init` writes machine-local `.cursor/mcp.json`, syncs only selected lane skills,
-and merges owned skill IDs into `platform-repos.json`. Product registries remain
-in the target code repository.
+merges owned skill IDs into `platform-repos.json`, and installs the selected BE
+adapter's managed registry defaults under `registries/`. Existing user-modified
+registries are reported as conflicts unless `--force` is explicit.

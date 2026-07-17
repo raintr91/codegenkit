@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import keyword
+import re
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -28,6 +30,31 @@ def repo_root() -> Path:
   return Path(target).resolve()
 
 
+def python_identifier(value: str, label: str) -> str:
+  identifier = to_snake(value)
+  if not identifier.isidentifier() or keyword.iskeyword(identifier):
+    raise ValueError(f"Invalid {label} for Python identifier: {value!r}")
+  return identifier
+
+
+def python_type(field: dict) -> str:
+  raw = str(field.get("type") or field.get("dataType") or "string").lower()
+  return {
+    "string": "str",
+    "str": "str",
+    "integer": "int",
+    "int": "int",
+    "number": "float",
+    "float": "float",
+    "boolean": "bool",
+    "bool": "bool",
+    "array": "list",
+    "list": "list",
+    "object": "dict",
+    "dict": "dict",
+  }.get(raw, "str")
+
+
 def resolve_codegen_context(spec: dict) -> dict:
   codegen = spec.get("codegen") or {}
   primary_module = (spec.get("modules") or [{}])[0]
@@ -39,8 +66,9 @@ def resolve_codegen_context(spec: dict) -> dict:
   profile = codegen.get("profile") or "crud-standard"
 
   module_kebab = to_kebab(module)
+  module_package = python_identifier(module, "module")
   entity_kebab = to_kebab(entity)
-  entity_snake = to_snake(entity)
+  entity_snake = python_identifier(entity, "entity")
   entity_pascal = to_pascal(entity)
   module_pascal = to_pascal(module)
   wire = resolve_wire(spec)
@@ -55,23 +83,41 @@ def resolve_codegen_context(spec: dict) -> dict:
     route_prefix = search_ep["path"]
   elif endpoints and endpoints[0].get("path"):
     route_prefix = endpoints[0]["path"]
-  route_prefix = route_prefix.rstrip("/") or f"/{entity_kebab}s"
+  route_prefix = re.sub(r"/\{[^/]+\}$", "", route_prefix).rstrip("/") or f"/{entity_kebab}s"
 
   entity_fields = primary_entity.get("fields") or []
-  field_names = [f.get("name") or f.get("key") for f in entity_fields if (f.get("name") or f.get("key"))]
+  field_defs = []
+  for field in entity_fields:
+    raw_name = field.get("name") or field.get("key")
+    if not raw_name:
+      continue
+    name = python_identifier(str(raw_name), "field")
+    required = bool(field.get("required")) and name != "id"
+    field_defs.append({
+      "name": name,
+      "type": python_type(field),
+      "required": required,
+    })
+  if not field_defs:
+    field_defs = [
+      {"name": "id", "type": "int", "required": False},
+      {"name": "name", "type": "str", "required": False},
+    ]
 
   return {
     "module": module,
     "entity": entity,
     "profile": profile,
     "module_kebab": module_kebab,
+    "module_package": module_package,
     "module_pascal": module_pascal,
     "entity_kebab": entity_kebab,
     "entity_snake": entity_snake,
     "entity_pascal": entity_pascal,
     "wire": wire,
     "route_prefix": route_prefix,
-    "field_names": field_names or ["id", "name"],
+    "field_names": [field["name"] for field in field_defs],
+    "field_defs": field_defs,
     "endpoints": endpoints,
     "spec": spec,
   }
@@ -81,7 +127,7 @@ def build_file_plan(spec: dict, *, force: bool = False) -> dict:
   root = repo_root()
   ctx = resolve_codegen_context(spec)
   registry = load_registry(root)
-  base = f"src/app/modules/{ctx['module_kebab']}/{ctx['entity_snake']}"
+  base = f"src/app/modules/{ctx['module_package']}/{ctx['entity_snake']}"
   files: list[dict] = []
   skipped: list[dict] = []
 
@@ -96,6 +142,8 @@ def build_file_plan(spec: dict, *, force: bool = False) -> dict:
   add("schemas_request", f"{base}/schemas/request.py", "schemas_request.py.j2", "schemas")
   add("schemas_response", f"{base}/schemas/response.py", "schemas_response.py.j2", "schemas")
   add("presenter", f"{base}/presenters/{ctx['entity_snake']}_presenter.py", "presenter.py.j2", "presenter")
+  if any(ctx["wire"].get(action) for action in ("search", "create", "update", "delete")):
+    add("store", f"{base}/services/store.py", "store.py.j2", "service")
 
   if ctx["wire"].get("search"):
     add("service_search", f"{base}/services/search_service.py", "service_search.py.j2", "service")

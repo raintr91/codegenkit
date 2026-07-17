@@ -20,22 +20,28 @@ function resultOf(result: ReturnType<typeof spawnSync>): EngineResult {
   }
 }
 
-function pythonExecutable(projectRoot: string): string {
+function pythonExecutables(projectRoot: string): string[] {
   const configured = process.env.CODEGENKIT_PYTHON
-  if (configured) return configured
-  const candidates = [
+  return [
+    ...(configured ? [configured] : []),
     path.join(projectRoot, '.venv', 'bin', 'python'),
     path.join(projectRoot, '.venv', 'Scripts', 'python.exe'),
-  ]
-  return candidates.find(existsSync) ?? 'python3'
+    'python3',
+    'python',
+  ].filter((candidate, index, all) =>
+    all.indexOf(candidate) === index &&
+    (!candidate.includes(path.sep) || existsSync(candidate)),
+  )
 }
 
 export function runBeEngine(opts: {
   adapter: BeAdapterId
   projectRoot: string
+  kind?: 'codegen' | 'unitgen' | 'registry' | 'unit-registry'
   argv?: string[]
   dryRun?: boolean
 }): EngineResult {
+  const kind = opts.kind ?? 'codegen'
   const argv = [...(opts.argv ?? [])]
   if (opts.dryRun && !argv.includes('--dry-run') && !argv.includes('--dry')) {
     argv.push('--dry-run')
@@ -48,7 +54,34 @@ export function runBeEngine(opts: {
   }
 
   if (opts.adapter === 'fastapi') {
+    if (kind === 'registry' || kind === 'unit-registry') {
+      const scope = kind === 'registry' ? 'codegen' : 'unitgen'
+      const validator = path.join(
+        packageRoot(),
+        'adapters',
+        'fastapi',
+        scope,
+        'runners',
+        'validate-registry.mjs',
+      )
+      return resultOf(
+        spawnSync(process.execPath, [validator, ...argv], {
+          cwd: opts.projectRoot,
+          encoding: 'utf8',
+          env,
+        }),
+      )
+    }
+    const scope = kind === 'unitgen' ? 'unitgen' : 'codegen'
+    const moduleName = kind === 'unitgen' ? 'fast_unit_gen.cli' : 'fast_gen.cli'
     const runners = path.join(
+      packageRoot(),
+      'adapters',
+      'fastapi',
+      scope,
+      'runners',
+    )
+    const codegenRunners = path.join(
       packageRoot(),
       'adapters',
       'fastapi',
@@ -61,25 +94,42 @@ export function runBeEngine(opts: {
     if (!normalized.includes('dry') && !normalized.includes('write') && !normalized.includes('registry')) {
       normalized.unshift(opts.dryRun ? 'dry' : 'write')
     }
-    return resultOf(
-      spawnSync(pythonExecutable(opts.projectRoot), ['-m', 'fast_gen.cli', ...normalized], {
+    for (const python of pythonExecutables(opts.projectRoot)) {
+      const result = spawnSync(python, ['-m', moduleName, ...normalized], {
         cwd: opts.projectRoot,
         encoding: 'utf8',
         env: {
           ...env,
-          PYTHONPATH: [runners, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),
+          PYTHONPATH: [runners, codegenRunners, process.env.PYTHONPATH]
+            .filter(Boolean)
+            .join(path.delimiter),
         },
-      }),
-    )
+      })
+      if (!(result.error as NodeJS.ErrnoException | undefined)?.code?.includes('ENOENT')) {
+        return resultOf(result)
+      }
+    }
+    return {
+      status: 1,
+      stdout: '',
+      stderr:
+        'No Python runtime found; set CODEGENKIT_PYTHON or create target .venv',
+    }
   }
 
+  const scope =
+    kind === 'unitgen' || kind === 'unit-registry' ? 'unitgen' : 'codegen'
+  const script =
+    kind === 'registry' || kind === 'unit-registry'
+      ? 'validate-registry.mjs'
+      : 'generate.mjs'
   const engine = path.join(
     packageRoot(),
     'adapters',
     'laravel',
-    'apigen',
+    scope,
     'runners',
-    'generate.mjs',
+    script,
   )
   return resultOf(
     spawnSync(process.execPath, [engine, ...argv], {

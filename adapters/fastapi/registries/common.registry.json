@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "description": "Platform common patterns — helpers, deps, policies, clients (fast-api-base).",
+  "entries": {
+    "auth.current-roles": {
+      "status": "planned",
+      "tag": "#common:auth-current-roles",
+      "kind": "dependency",
+      "path": "src/app/common/auth/roles.py",
+      "symbol": "get_current_roles",
+      "summary": "Current user roles for policy checks — promote from inline module logic",
+      "usedBy": [],
+      "specRefs": [],
+      "tests": "tests/unit/common/auth/test_roles.py"
+    }
+  },
+  "aliasIndex": {
+    "check auth role": "auth.current-roles",
+    "current roles": "auth.current-roles",
+    "get current roles": "auth.current-roles",
+    "user roles": "auth.current-roles"
+  }
+}

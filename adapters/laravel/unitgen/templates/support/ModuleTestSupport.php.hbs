@@ -1,0 +1,32 @@
+<?php
+
+namespace {{moduleNamespace}}\Tests\Support;
+
+use {{phpFqcn moduleBaseRequestFqcn}};
+use {{phpFqcn moduleControllerFqcn}};
+use Tests\Unit\Concerns\ExercisesRequestValidationHooks;
+use Tests\Unit\Concerns\InvokesControllerMethods;
+
+/**
+ * Thin module wiring for shared unit-test concerns (api:unit-gen).
+ */
+trait ModuleTestSupport
+{
+    use ExercisesRequestValidationHooks;
+    use InvokesControllerMethods;
+
+    protected function moduleBaseRequestClass(): ?string
+    {
+        return {{phpFqcn moduleBaseRequestFqcn}}::class;
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
+    protected function moduleControllerSkipClasses(): array
+    {
+        return [
+            {{phpFqcn moduleControllerFqcn}}::class,
+        ];
+    }
+}
