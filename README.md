@@ -16,6 +16,21 @@ codegenkit init --type=be --adapter=laravel --yes
 codegenkit init --type=fullstack --fe-adapter=nextjs --be-adapter=fastapi --yes
 ```
 
+Inspect and safely clean managed harness assets:
+
+```bash
+codegenkit status
+codegenkit prune                         # dry-run
+codegenkit prune --yes                   # delete unmodified stale files only
+```
+
+Changing profile or adapter keeps targets from the previous install in
+`.codegenkit/install-manifest.json` as stale. `status` reports managed files as
+`healthy`, `missing`, `modified`, or `stale`, plus package/API compatibility.
+`prune` considers only paths recorded in that manifest, never
+`platform-repos.json` or unrelated project files, and always preserves locally
+modified stale files.
+
 Executable tools:
 
 - `codegen_gen` / `codegen_gen_dry`

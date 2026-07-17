@@ -4,6 +4,7 @@ import {
   mkdirSync,
   readFileSync,
   existsSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs'
 import os from 'node:os'
@@ -11,7 +12,13 @@ import path from 'node:path'
 import test from 'node:test'
 import { spawnSync } from 'node:child_process'
 
-import { installHarness, BE_SKILLS, FE_SKILLS } from '../dist/install/harness.js'
+import {
+  installHarness,
+  pruneHarness,
+  harnessStatus,
+  BE_SKILLS,
+  FE_SKILLS,
+} from '../dist/install/harness.js'
 import { mergePlatformRepos } from '../dist/install/platform-repos.js'
 import {
   resolveAdapter,
@@ -126,6 +133,129 @@ test('fullstack init syncs FE and BE subsets explicitly', () => {
   const platform = JSON.parse(readFileSync(maps.path, 'utf8'))
   assert.equal(platform.harness.profiles.fe.adapter, 'nextjs')
   assert.equal(platform.harness.profiles.be.adapter, 'fastapi')
+})
+
+test('adapter switch marks obsolete BE registry assets stale', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-adapter-switch-'))
+  installHarness({
+    projectRoot: root,
+    type: 'be',
+    beAdapter: 'fastapi',
+  })
+  const fastapiOnlyRegistry = path.join(root, 'registries', 'common.registry.json')
+  assert.ok(existsSync(fastapiOnlyRegistry))
+
+  const switched = installHarness({
+    projectRoot: root,
+    type: 'be',
+    beAdapter: 'laravel',
+  })
+  assert.ok(switched.stale.includes(fastapiOnlyRegistry))
+  const status = harnessStatus(root)
+  assert.equal(status.adapters.be, 'laravel')
+  assert.ok(status.stale.includes(fastapiOnlyRegistry))
+  assert.ok(status.healthy.includes(path.join(root, 'registries', 'codegen.registry.json')))
+
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, '.codegenkit', 'install-manifest.json'), 'utf8'),
+  )
+  assert.equal(manifest.files['registries/common.registry.json'].stale, true)
+  assert.equal(manifest.files['registries/codegen.registry.json'].stale, undefined)
+})
+
+test('prune is dry-run by default and --yes preserves modified stale files', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-prune-'))
+  installHarness({
+    projectRoot: root,
+    type: 'be',
+    beAdapter: 'fastapi',
+  })
+  const removable = path.join(root, 'registries', 'common.registry.json')
+  const modified = path.join(root, '.cursor', 'skills', 'api', 'SKILL.md')
+  const unmanaged = path.join(root, 'unmanaged.txt')
+  const platformRepos = path.join(root, 'platform-repos.json')
+  writeFileSync(unmanaged, 'not in the install manifest\n')
+  writeFileSync(platformRepos, '{"keep":true}\n')
+
+  installHarness({
+    projectRoot: root,
+    type: 'fe',
+    feAdapter: 'nextjs',
+  })
+  writeFileSync(modified, `${readFileSync(modified, 'utf8')}\nlocal customization\n`)
+
+  const dryRun = pruneHarness({ projectRoot: root })
+  assert.ok(dryRun.removable.includes(removable))
+  assert.ok(dryRun.modified.includes(modified))
+  assert.deepEqual(dryRun.removed, [])
+  assert.ok(existsSync(removable))
+
+  const cliDryRun = spawnSync(
+    process.execPath,
+    ['bin/codegenkit.mjs', 'prune', '--project-root', root],
+    { cwd: path.resolve('.'), encoding: 'utf8' },
+  )
+  assert.equal(cliDryRun.status, 0, cliDryRun.stderr)
+  assert.match(cliDryRun.stdout, /would remove/)
+  assert.match(cliDryRun.stdout, /Dry-run only/)
+  assert.ok(existsSync(removable))
+
+  const cliPrune = spawnSync(
+    process.execPath,
+    ['bin/codegenkit.mjs', 'prune', '--project-root', root, '--yes'],
+    { cwd: path.resolve('.'), encoding: 'utf8' },
+  )
+  assert.equal(cliPrune.status, 0, cliPrune.stderr)
+  assert.match(cliPrune.stdout, /removed/)
+  assert.match(cliPrune.stdout, /keep modified/)
+  assert.equal(existsSync(removable), false)
+  assert.ok(existsSync(modified))
+  assert.equal(readFileSync(unmanaged, 'utf8'), 'not in the install manifest\n')
+  assert.equal(readFileSync(platformRepos, 'utf8'), '{"keep":true}\n')
+
+  const statusResult = spawnSync(
+    process.execPath,
+    ['bin/codegenkit.mjs', 'status', '--project-root', root],
+    { cwd: path.resolve('.'), encoding: 'utf8' },
+  )
+  assert.equal(statusResult.status, 0, statusResult.stderr)
+  const status = JSON.parse(statusResult.stdout)
+  assert.equal(status.compat, 'ok')
+  assert.ok(status.modified.includes(modified))
+  assert.equal(status.stale.includes(removable), false)
+})
+
+test('status reports missing installs and package compatibility', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-status-'))
+  const packageVersion = JSON.parse(readFileSync('package.json', 'utf8')).version
+  assert.deepEqual(harnessStatus(root), {
+    projectRoot: root,
+    packageVersion,
+    installed: false,
+    packageVersionInstalled: null,
+    type: null,
+    adapters: null,
+    toolApi: null,
+    harnessApi: null,
+    healthy: [],
+    missing: [],
+    modified: [],
+    stale: [],
+    compat: 'warn',
+  })
+
+  installHarness({ projectRoot: root, type: 'fe', feAdapter: 'nuxt4' })
+  const missingTarget = path.join(root, '.cursor', 'skills', 'prototype', 'SKILL.md')
+  rmSync(missingTarget)
+  assert.ok(harnessStatus(root).missing.includes(missingTarget))
+  const manifestPath = path.join(root, '.codegenkit', 'install-manifest.json')
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  manifest.packageVersion = '0.0.0'
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+  assert.equal(harnessStatus(root).compat, 'warn')
+  manifest.toolApi = 99
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+  assert.equal(harnessStatus(root).compat, 'fail')
 })
 
 test('Laravel adapter dry-run is target-contained and non-writing', () => {

@@ -15,3 +15,24 @@ profiles must not install Codegenkit.
 merges owned skill IDs into `platform-repos.json`, and installs the selected BE
 adapter's managed registry defaults under `registries/`. Existing user-modified
 registries are reported as conflicts unless `--force` is explicit.
+
+## Managed lifecycle
+
+The install manifest at `.codegenkit/install-manifest.json` records every
+managed target, its installed hash, selected profile, and adapters. On a later
+`init`, targets no longer supplied by that profile/adapter are retained in the
+manifest with `stale: true`; they are not silently deleted. This includes
+adapter-owned BE registry defaults.
+
+```bash
+codegenkit status                         # JSON health and compatibility report
+codegenkit prune                          # dry-run: list safe stale removals
+codegenkit prune --yes                    # remove unmodified stale files
+```
+
+`status` buckets manifest-owned targets into `healthy`, `missing`, `modified`,
+and `stale`. A stale target changed locally is `modified`, and `prune --yes`
+always keeps it. Prune derives the current managed set from the profile and
+adapters stored in the manifest. It never scans for deletion candidates and
+never deletes `platform-repos.json` or any other path absent from the install
+manifest.

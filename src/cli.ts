@@ -7,7 +7,13 @@ import {
   resolveType,
 } from './config/project-root.js'
 import { installCursorMcp } from './install/cursor-mcp.js'
-import { BE_SKILLS, FE_SKILLS, installHarness } from './install/harness.js'
+import {
+  BE_SKILLS,
+  FE_SKILLS,
+  harnessStatus,
+  installHarness,
+  pruneHarness,
+} from './install/harness.js'
 import { mergePlatformRepos } from './install/platform-repos.js'
 import { runAdapterEngine } from './adapters/run.js'
 import { runBeEngine } from './adapters/run-be.js'
@@ -36,6 +42,8 @@ function usage(): never {
   init --type=fe --adapter=nuxt4|nextjs [--project-root <path>] [--docs-root <path>] [--force] [--yes]
   init --type=be --adapter=fastapi|laravel [--project-root <path>] [--force] [--yes]
   init --type=fullstack --fe-adapter=nuxt4|nextjs --be-adapter=fastapi|laravel …
+  status [--project-root <path>]
+  prune [--project-root <path>] [--yes]    # dry-run by default
   gen|gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
   unit-gen|unit-gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
   api-gen|api-gen:dry [--adapter=fastapi|laravel] [--project-root=…] -- --spec <path>
@@ -95,6 +103,7 @@ async function main(): Promise<void> {
     for (const file of harness.written) console.log(`  wrote: ${file}`)
     for (const file of harness.unchanged) console.log(`  unchanged: ${file}`)
     for (const file of harness.conflicts) console.log(`  conflict: ${file}`)
+    for (const file of harness.stale) console.log(`  stale: ${file} (run codegenkit prune)`)
     const maps = mergePlatformRepos({
       projectRoot: root,
       type,
@@ -107,6 +116,27 @@ async function main(): Promise<void> {
   }
 
   const root = resolveProjectRoot(arg('--project-root'))
+  if (command === 'status') {
+    const status = harnessStatus(root)
+    console.log(JSON.stringify(status, null, 2))
+    if (status.compat === 'fail') process.exit(1)
+    return
+  }
+  if (command === 'prune') {
+    const yes = has('--yes')
+    const result = pruneHarness({ projectRoot: root, yes })
+    for (const file of result.removable) {
+      console.log(`  ${yes ? 'removed' : 'would remove'}: ${file}`)
+    }
+    for (const file of result.modified) console.log(`  keep modified: ${file}`)
+    if (!yes && result.removable.length) {
+      console.log('Dry-run only. Re-run with --yes to delete unmodified stale assets.')
+    }
+    console.log(
+      `Prune: ${result.removed.length} removed, ${result.removable.length} removable, ${result.modified.length} modified kept`,
+    )
+    return
+  }
   const docsRoot = arg('--docs-root')
   if (command === 'api-gen' || command === 'api-gen:dry') {
     printResult(
