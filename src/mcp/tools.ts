@@ -7,6 +7,7 @@ import {
 } from '../config/project-root.js'
 import { runAdapterEngine } from '../adapters/run.js'
 import { runBeEngine } from '../adapters/run-be.js'
+import { validateCommonRegistry } from '../registries/common.js'
 
 function text(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] }
@@ -118,4 +119,29 @@ export function registerTools(server: McpServer): void {
   registerBe('api_unit_gen_dry', 'Dry-run backend API unit generation.', 'unitgen', true)
   registerBe('api_registry_validate', 'Validate backend API codegen registry.', 'registry')
   registerBe('api_unit_registry_validate', 'Validate backend API unit registry.', 'unit-registry')
+
+  server.tool(
+    'common_registry_validate',
+    'Validate the target common registry and alias references.',
+    {
+      projectRoot: z.string().optional(),
+      registry: z.string().optional(),
+    },
+    async (input) => {
+      try {
+        return text({
+          ok: true,
+          ...validateCommonRegistry(
+            resolveProjectRoot(input.projectRoot),
+            input.registry,
+          ),
+        })
+      } catch (error) {
+        return text({
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    },
+  )
 }

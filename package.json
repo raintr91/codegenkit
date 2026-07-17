@@ -1,6 +1,6 @@
 {
   "name": "@platform/codegenkit",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Local MCP: FE/BE codegen adapters (Nuxt, Next, FastAPI, Laravel)",
   "type": "module",
   "main": "./dist/index.js",
@@ -18,6 +18,7 @@
     "dist",
     "docs",
     "harness",
+    "schemas",
     "install.sh",
     "install.ps1",
     "mcp-package.json",

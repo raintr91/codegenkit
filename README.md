@@ -2,7 +2,7 @@
 
 Independent MCP/harness package for FE and BE code generation.
 
-The installers default to immutable release tag `v0.3.2` and enforce the
+The installers default to immutable release tag `v0.3.3` and enforce the
 committed lockfile (`pnpm --frozen-lockfile` or `npm ci`). Set
 `CODEGENKIT_REF` / PowerShell `-Ref` only for an explicit alternate release.
 
@@ -43,8 +43,15 @@ Executable tools:
 - `api_gen` / `api_gen_dry`
 - `api_unit_gen` / `api_unit_gen_dry`
 - `api_registry_validate` / `api_unit_registry_validate`
+- `common_registry_validate` (CLI: `codegenkit common-registry`)
 
 Set `CODEGENKIT_DOCS_ROOT` (or `--docs-root`). No sibling docs hub is assumed.
+ID-based FE generation requires the docs-hub Code artifact at `ir/spec.yaml`;
+bundle YAML is never accepted as a codegen fallback.
+
+The published `schemas/common-registry.schema.json` describes the installed
+`registries/common.registry.json` format. The common-registry validator also
+checks that every alias targets an existing entry.
 
 ArtifactGraph is optional for allowlist recommendation only.
 

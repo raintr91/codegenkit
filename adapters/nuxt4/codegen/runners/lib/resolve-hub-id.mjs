@@ -95,10 +95,6 @@ export function preferGenSpec(codeDir) {
   if (!codeDir || !existsSync(codeDir)) return null
   const ir = path.join(codeDir, 'ir', 'spec.yaml')
   if (existsSync(ir)) return ir
-  // fallback: any *bundle.yaml (may not be gen-ready)
-  for (const f of readdirSync(codeDir)) {
-    if (f.endsWith('.bundle.yaml') || f === 'spec.yaml') return path.join(codeDir, f)
-  }
   return null
 }
 
@@ -178,7 +174,12 @@ export function resolveHubId(repoRoot, id, mode = 'testcase') {
     if (!rel) throw new Error(`Unknown code id ${id} in base-docs registries/docs-index.json`)
     const codeDir = absUnder(docsRoot, rel)
     const spec = preferGenSpec(codeDir)
-    if (!spec) throw new Error(`No ir/spec.yaml or bundle under ${rel}`)
+    if (!spec) {
+      throw new Error(
+        `Missing required ir/spec.yaml under ${rel}; bundle YAML is design input and cannot be used for codegen. ` +
+          'Generate the codegen IR in the docs hub before running portal:gen.',
+      )
+    }
     notes.push(`codegen input: ${path.relative(repoRoot, spec)}`)
     return { kind: 'code', id, paths: [spec], notes, codeDir }
   }

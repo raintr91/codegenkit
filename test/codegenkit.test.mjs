@@ -26,7 +26,17 @@ import {
   resolveType,
 } from '../dist/config/project-root.js'
 import { installCursorMcp } from '../dist/install/cursor-mcp.js'
+import { runAdapterEngine } from '../dist/adapters/run.js'
 import { runBeEngine } from '../dist/adapters/run-be.js'
+import { validateCommonRegistry } from '../dist/registries/common.js'
+import {
+  preferGenSpec as preferNuxtGenSpec,
+  resolveHubId as resolveNuxtHubId,
+} from '../adapters/nuxt4/codegen/runners/lib/resolve-hub-id.mjs'
+import {
+  preferGenSpec as preferNextGenSpec,
+  resolveHubId as resolveNextHubId,
+} from '../adapters/nextjs/codegen/runners/lib/resolve-hub-id.mjs'
 
 const OPTIONAL_SCHEMA_REL =
   '.cursor/schemas/codegenkit/missing-optional-event.schema.json'
@@ -40,6 +50,135 @@ test('adapters resolve', () => {
   assert.equal(resolveBeAdapter('fastapi'), 'fastapi')
   assert.equal(resolveBeAdapter('laravel'), 'laravel')
   assert.equal(resolveType('fullstack'), 'fullstack')
+})
+
+test('Nuxt and Next ID resolution require ir/spec.yaml', () => {
+  const docsRoot = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-gen-spec-'))
+  const root = path.join(docsRoot, 'product', 'fixture')
+  mkdirSync(path.join(docsRoot, 'registries'), { recursive: true })
+  mkdirSync(root, { recursive: true })
+  writeFileSync(
+    path.join(docsRoot, 'registries', 'docs-index.json'),
+    JSON.stringify({ version: 1, codeIds: { 'W-FIXTURE': 'product/fixture' } }),
+  )
+  writeFileSync(path.join(root, 'feature.bundle.yaml'), 'id: W-FIXTURE\n')
+  writeFileSync(path.join(root, 'spec.yaml'), 'id: legacy\n')
+
+  for (const preferGenSpec of [preferNuxtGenSpec, preferNextGenSpec]) {
+    assert.equal(preferGenSpec(root), null)
+  }
+  const previousDocsRoot = process.env.CODEGENKIT_DOCS_ROOT
+  process.env.CODEGENKIT_DOCS_ROOT = docsRoot
+  try {
+    for (const resolveHubId of [resolveNuxtHubId, resolveNextHubId]) {
+      assert.throws(
+        () => resolveHubId(docsRoot, 'W-FIXTURE', 'codegen'),
+        /Missing required ir\/spec\.yaml.*bundle YAML is design input.*Generate the codegen IR/s,
+      )
+    }
+  } finally {
+    if (previousDocsRoot === undefined) delete process.env.CODEGENKIT_DOCS_ROOT
+    else process.env.CODEGENKIT_DOCS_ROOT = previousDocsRoot
+  }
+
+  const ir = path.join(root, 'ir')
+  mkdirSync(ir)
+  const spec = path.join(ir, 'spec.yaml')
+  writeFileSync(spec, 'codegen:\n  profile: list\n')
+  for (const preferGenSpec of [preferNuxtGenSpec, preferNextGenSpec]) {
+    assert.equal(preferGenSpec(root), spec)
+  }
+})
+
+test('common registry validator accepts shipped registry and rejects dangling aliases', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-common-registry-'))
+  mkdirSync(path.join(root, 'registries'))
+  const registryPath = path.join(root, 'registries', 'common.registry.json')
+  const shipped = readFileSync('adapters/fastapi/registries/common.registry.json', 'utf8')
+  writeFileSync(registryPath, shipped)
+
+  const valid = validateCommonRegistry(root)
+  assert.equal(valid.version, 1)
+  assert.equal(valid.entries, 1)
+  assert.equal(valid.aliases, 4)
+  const cli = spawnSync(
+    process.execPath,
+    ['bin/codegenkit.mjs', 'common-registry', '--project-root', root],
+    { cwd: path.resolve('.'), encoding: 'utf8' },
+  )
+  assert.equal(cli.status, 0, cli.stderr)
+  assert.match(cli.stdout, /common\.registry v1: OK \(1 entries, 4 aliases\)/)
+
+  const invalid = JSON.parse(shipped)
+  invalid.aliasIndex.broken = 'missing.entry'
+  writeFileSync(registryPath, `${JSON.stringify(invalid, null, 2)}\n`)
+  assert.throws(
+    () => validateCommonRegistry(root),
+    /aliasIndex\.broken: target "missing\.entry" does not exist/,
+  )
+})
+
+test('Nuxt and Next adapter dry-runs do not write generated files', () => {
+  for (const adapter of ['nuxt4', 'nextjs']) {
+    const root = mkdtempSync(path.join(os.tmpdir(), `codegenkit-${adapter}-dry-`))
+    const docsRoot = path.join(root, 'docs')
+    const featureDir = path.join(docsRoot, 'product', 'fixture')
+    const irDir = path.join(featureDir, 'ir')
+    mkdirSync(path.join(root, 'registries'), { recursive: true })
+    mkdirSync(irDir, { recursive: true })
+    writeFileSync(
+      path.join(root, 'registries', 'design.registry.json'),
+      JSON.stringify({
+        version: 1,
+        canonicalSystem: 'fixture',
+        defaults: {
+          listShell: 'DataListPage',
+          shellByProfile: { list: 'DataListPage' },
+        },
+        shells: { DataListPage: {} },
+        fieldWidgets: {},
+        detailRenders: {},
+        aliasIndex: {},
+      }),
+    )
+    const spec = path.join(irDir, 'spec.yaml')
+    writeFileSync(
+      spec,
+      `id: W-FIXTURE
+title: Fixture
+codegen:
+  profile: list
+  entity: item
+  module: items
+ui:
+  routes:
+    - path: /items
+  columns:
+    - key: name
+      label: Name
+      type: string
+api:
+  endpoints:
+    - action: list
+      method: GET
+      path: /api/items
+`,
+    )
+
+    const result = runAdapterEngine({
+      adapter,
+      kind: 'codegen',
+      script: 'generate.mjs',
+      projectRoot: root,
+      docsRoot,
+      argv: ['--spec', spec],
+      dryRun: true,
+    })
+    assert.equal(result.status, 0, `${adapter}: ${result.stderr}`)
+    assert.match(result.stdout, /mode: dry-run/)
+    assert.equal(existsSync(path.join(featureDir, 'generated')), false)
+    assert.equal(existsSync(path.join(root, adapter === 'nextjs' ? 'src' : 'pages')), false)
+  }
 })
 
 test('fe init syncs skills and forbids docs assumptions', () => {
@@ -465,7 +604,7 @@ test('installers pin the released tag and enforce lockfiles', () => {
   const shell = readFileSync('install.sh', 'utf8')
   const powershell = readFileSync('install.ps1', 'utf8')
   for (const script of [shell, powershell]) {
-    assert.match(script, /v0\.3\.2/)
+    assert.match(script, /v0\.3\.3/)
     assert.match(script, /pnpm install --frozen-lockfile/)
     assert.match(script, /npm ci/)
     assert.doesNotMatch(script, /(?:REF:-main|Ref = "main")/)

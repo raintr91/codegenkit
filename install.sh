@@ -3,7 +3,7 @@ set -euo pipefail
 REPO="${CODEGENKIT_REPO:-raintr91/codegenkit}"
 INSTALL_DIR="${CODEGENKIT_INSTALL_DIR:-$HOME/.codegenkit}"
 BIN_DIR="${CODEGENKIT_BIN_DIR:-$HOME/.local/bin}"
-REF="${CODEGENKIT_REF:-v0.3.2}"
+REF="${CODEGENKIT_REF:-v0.3.3}"
 if [ "${1:-}" = "--uninstall" ]; then
   rm -f "$BIN_DIR/codegenkit" "$BIN_DIR/codegenkit-mcp"
   rm -rf "$INSTALL_DIR"

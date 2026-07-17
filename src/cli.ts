@@ -17,6 +17,7 @@ import {
 import { mergePlatformRepos } from './install/platform-repos.js'
 import { runAdapterEngine } from './adapters/run.js'
 import { runBeEngine } from './adapters/run-be.js'
+import { validateCommonRegistry } from './registries/common.js'
 
 function arg(name: string): string | undefined {
   const eq = process.argv.find((value) => value.startsWith(`${name}=`))
@@ -50,6 +51,7 @@ function usage(): never {
   api-unit-gen|api-unit-gen:dry [--adapter=fastapi|laravel] [--project-root=…] -- --spec <path>
   api-registry|api-unit-registry [--adapter=fastapi|laravel] [--project-root=…]
   registry|unit-registry [--adapter=…] [--project-root=…]
+  common-registry [--project-root=…] [--registry <path>]
   version
 
 Owned FE skills: ${FE_SKILLS.map((id) => `/${id}`).join(' ')}
@@ -135,6 +137,14 @@ async function main(): Promise<void> {
     console.log(
       `Prune: ${result.removed.length} removed, ${result.removable.length} removable, ${result.modified.length} modified kept`,
     )
+    return
+  }
+  if (command === 'common-registry') {
+    const result = validateCommonRegistry(root, arg('--registry'))
+    console.log(
+      `common.registry v${result.version}: OK (${result.entries} entries, ${result.aliases} aliases)`,
+    )
+    console.log(`  path: ${result.path}`)
     return
   }
   const docsRoot = arg('--docs-root')

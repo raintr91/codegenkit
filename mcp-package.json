@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@platform/codegenkit",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "types": ["fe", "be", "fullstack"],
   "requires": [],
   "optional": ["@platform/artifactgraph", "codegraph"],
@@ -17,7 +17,8 @@
     "api_unit_gen",
     "api_unit_gen_dry",
     "api_registry_validate",
-    "api_unit_registry_validate"
+    "api_unit_registry_validate",
+    "common_registry_validate"
   ],
   "skillsByType": {
     "fe": ["prototype", "wire", "unit", "grill-prototype", "grill-unit"],
