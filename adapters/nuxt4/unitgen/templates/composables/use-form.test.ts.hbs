@@ -1,0 +1,56 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+import { mockNuxtApiFetch } from '~/tests/unit/_helpers/nuxtGlobals'
+
+const mockCreate = vi.fn()
+const mockPush = vi.fn()
+
+vi.mock('~/mocks/{{entity}}.mock', () => ({
+  {{entityCamel}}MockCreate: (...args: unknown[]) => mockCreate(...args)
+}))
+
+vi.stubGlobal('useRouter', () => ({ push: mockPush }))
+
+vi.mock('~/composables/forms/useApiForm', () => ({
+  useApiForm: <T extends Record<string, unknown>>(options: {
+    initialValues: T
+    submit: (values: T) => Promise<void>
+  }) => ({
+    onSubmit: async () => {
+      await options.submit({{{validFormValuesJson}}} as T)
+    },
+    errors: {},
+    apiError: { value: null },
+    isSubmitting: { value: false }
+  })
+}))
+
+import { use{{entityPascal}}Form } from '~/composables/{{entity}}/use{{entityPascal}}Form'
+
+describe('composables/{{entity}}/use{{entityPascal}}Form', () => {
+  const validForm = {{{validFormValuesJson}}} as const
+
+  beforeEach(() => {
+    mockCreate.mockReset()
+    mockPush.mockReset()
+    mockNuxtApiFetch.mockReset()
+    mockCreate.mockResolvedValue({ id: 1, ...validForm })
+  })
+
+  it('exposes empty initialValues for form fields', () => {
+    const { initialValues } = use{{entityPascal}}Form()
+
+{{#each formFields}}
+    expect(initialValues.{{key}}).toBe({{#if (eq type 'number')}}0{{else}}''{{/if}})
+{{/each}}
+  })
+
+  it('onSubmit calls prototype mock create and navigates to list', async () => {
+    const { onSubmit } = use{{entityPascal}}Form()
+
+    await onSubmit()
+
+    expect(mockCreate).toHaveBeenCalledWith(validForm)
+    expect(mockPush).toHaveBeenCalledWith('{{listRoutePath}}')
+  })
+})

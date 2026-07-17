@@ -1,0 +1,25 @@
+import type { {{entityPascal}}ListResponse } from '@portal/models/{{entity}}';
+
+const PAGE1 = {{{json mockRowsPage1}}} as Record<string, unknown>[];
+const PAGE2 = {{{json mockRowsPage2}}} as Record<string, unknown>[];
+
+/**
+ * Prototype mock search — replace with service.search on /wire.
+ */
+export async function {{entityCamel}}MockSearch(
+  query: Record<string, unknown> = {},
+): Promise<{{entityPascal}}ListResponse> {
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  const page = Number(query.page ?? 1);
+  const perPage = Number(query.per_page ?? {{defaultPageSize}});
+  const source = page <= 1 ? PAGE1 : PAGE2;
+  const items = source.slice(0, perPage);
+
+  return {
+    items,
+    total: PAGE1.length + PAGE2.length,
+    page,
+    per_page: perPage,
+  };
+}

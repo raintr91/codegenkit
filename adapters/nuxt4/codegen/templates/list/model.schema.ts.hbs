@@ -1,0 +1,16 @@
+import { z } from 'zod'
+
+import { fields } from '~/models/common/fields'
+
+export const {{entityPascal}}Schema = z.object({
+{{#each columnSchemas}}
+  {{key}}: {{{zodField}}},
+{{/each}}
+})
+
+export const {{entityPascal}}ListSchema = z.array({{entityPascal}}Schema)
+
+export const {{entityPascal}}ListResponseSchema = z.object({
+  items: {{entityPascal}}ListSchema,
+  total: z.number().optional()
+})

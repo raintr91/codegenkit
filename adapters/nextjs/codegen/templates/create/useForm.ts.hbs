@@ -1,0 +1,59 @@
+'use client';
+
+import { useCallback, useMemo, useState } from 'react';
+import type { {{entityPascal}}CreateRequest } from '@portal/models/{{entity}}';
+import { {{entityCamel}}CreateFormSchema } from '@/validations/{{entity}}/schemas';
+import { create{{entityPascal}}Service } from '@/services/{{entity}}.service';
+import { {{entityCamel}}MockCreate } from '@/mocks/{{entity}}.mock';
+
+const initialValues: Record<string, unknown> = {
+{{#each formFields}}
+  {{key}}: {{#if (eq type 'number')}}0{{else}}''{{/if}},
+{{/each}}
+};
+
+/**
+ * {{title}} — create form hook (portal-gen).
+ * Mock boundary: replace {{entityCamel}}MockCreate with service.create on /wire.
+ */
+export function use{{entityPascal}}Form() {
+  const service = useMemo(() => create{{entityPascal}}Service(), []);
+  const [pending, setPending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [values, setValues] = useState<Record<string, unknown>>(initialValues);
+
+  const setField = useCallback((key: string, value: unknown) => {
+    setValues((current) => ({ ...current, [key]: value }));
+  }, []);
+
+  const submit = useCallback(async (): Promise<boolean> => {
+    setPending(true);
+    setErrorMsg(null);
+
+    const parsed = {{entityCamel}}CreateFormSchema.safeParse(values);
+    if (!parsed.success) {
+      setErrorMsg(parsed.error.issues[0]?.message ?? 'Invalid form');
+      setPending(false);
+      return false;
+    }
+
+    try {
+      await {{entityCamel}}MockCreate(parsed.data as {{entityPascal}}CreateRequest);
+      return true;
+    } catch (error: unknown) {
+      setErrorMsg((error as Error)?.message ?? 'Cannot create {{title}}');
+      return false;
+    } finally {
+      setPending(false);
+    }
+  }, [values]);
+
+  return {
+    values,
+    setField,
+    pending,
+    errorMsg,
+    submit,
+    service,
+  };
+}

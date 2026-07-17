@@ -1,0 +1,11 @@
+import type { {{entityPascal}}CreateRequest, {{entityPascal}} } from '~/models/{{entity}}/{{entity}}.types'
+
+let nextId = 1000
+
+export async function {{entityCamel}}MockCreate(payload: {{entityPascal}}CreateRequest): Promise<{{entityPascal}}> {
+  return {
+    id: nextId++,
+    ...payload,
+    created_at: new Date().toISOString()
+  } as {{entityPascal}}
+}

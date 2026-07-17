@@ -1,0 +1,24 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  {{entityPascal}}Schema,
+  {{entityPascal}}ListResponseSchema
+} from '~/models/{{entity}}/{{entity}}.schema'
+
+describe('models/{{entity}}/{{entity}}.schema', () => {
+  const validRow = {{{validRowJson}}} as const
+
+  it('parses a valid row', () => {
+    expect({{entityPascal}}Schema.parse(validRow)).toEqual(validRow)
+  })
+
+  it('parses list response envelope', () => {
+    const payload = { items: [validRow], total: 1 }
+    expect({{entityPascal}}ListResponseSchema.parse(payload)).toEqual(payload)
+  })
+
+  it('rejects row missing required field', () => {
+    const { {{failField}}: _removed, ...incomplete } = validRow
+    expect(() => {{entityPascal}}Schema.parse(incomplete)).toThrow()
+  })
+})

@@ -1,0 +1,132 @@
+import type { SearchFilterConfig } from '~/components/molecules/form/searchFilterTypes'
+import type { DataTableColumn } from '~/components/molecules/layout/useDataTableLogic'
+import { create{{entityPascal}}Service } from '~/services/{{entity}}.service'
+import { {{entityCamel}}MockSearch } from '~/mocks/{{entity}}.mock'
+
+function defaultExportMonth(): string {
+  const date = new Date()
+  date.setMonth(date.getMonth() - 1)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${date.getFullYear()}-${month}`
+}
+
+/**
+ * {{title}} — list composable (portal-gen).
+ * Mock boundary: replace {{entityCamel}}MockSearch with service.search on /wire.
+ */
+export function use{{entityPascal}}List() {
+  const { $apiFetch } = useNuxtApp()
+  const service = create{{entityPascal}}Service($apiFetch)
+
+  const pending = ref(false)
+  const errorMsg = ref<string | null>(null)
+  const items = ref<Record<string, unknown>[]>([])
+  const total = ref<number | null>(null)
+  const query = ref<Record<string, unknown>>({ per_page: {{defaultPageSize}} })
+{{#if hasExportBlock}}
+  const exportMonth = ref(defaultExportMonth())
+  const exportPending = ref(false)
+{{/if}}
+
+  const filters = computed<SearchFilterConfig[]>(() => [
+{{#each filters}}
+    {
+      name: '{{name}}',
+      label: '{{label}}',
+      type: '{{type}}'{{#if placeholder}},
+      placeholder: '{{placeholder}}'{{/if}}
+    }{{#unless @last}},{{/unless}}
+{{/each}}
+  ])
+
+  const columns = computed<DataTableColumn[]>(() => [
+{{#each columns}}
+    {
+      key: '{{key}}',
+      title: '{{title}}'{{#if sortable}},
+      sortable: true{{/if}}{{#if align}},
+      align: '{{align}}'{{/if}}
+    }{{#unless @last}},{{/unless}}
+{{/each}}
+  ])
+
+  const searchKeys = computed(() => columns.value.map((column) => column.key))
+
+{{#if hasPerPageToolbar}}
+  const perPage = computed({
+    get: () => Number(query.value.per_page ?? {{defaultPageSize}}),
+    set: (value: number) => {
+      query.value = { ...query.value, per_page: value, page: 1 }
+    }
+  })
+
+  function onPerPageChange() {
+    return load()
+  }
+{{/if}}
+
+  async function load() {
+    pending.value = true
+    errorMsg.value = null
+    try {
+      const result = await {{entityCamel}}MockSearch(query.value)
+      items.value = result.items
+      total.value = result.total ?? result.items.length
+    } catch (error: unknown) {
+      errorMsg.value = (error as Error)?.message ?? 'Cannot load {{title}}'
+      items.value = []
+      total.value = null
+    } finally {
+      pending.value = false
+    }
+  }
+
+  function onSearch() {
+    return load()
+  }
+
+  function onReset() {
+    query.value = { per_page: {{defaultPageSize}} }
+    return load()
+  }
+
+{{#if hasExportBlock}}
+  async function exportOpenRateReport() {
+    exportPending.value = true
+    try {
+      // Prototype: wire POST /hotels/export-report on /wire
+      await service.exportReport?.({ month: exportMonth.value })
+    } finally {
+      exportPending.value = false
+    }
+  }
+{{/if}}
+
+{{#if hasLoginAs}}
+  async function loginAsStoreManager(manager: { id: number }) {
+    // Prototype: wire POST /auth/store/login-from-admin on /wire
+    console.info('loginAsStoreManager', manager.id)
+  }
+{{/if}}
+
+  return {
+    pending,
+    errorMsg,
+    items,
+    total,
+    query,
+    filters,
+    columns,
+    searchKeys,
+    load,
+    onSearch,
+    onReset,
+    service{{#if hasPerPageToolbar}},
+    perPage,
+    onPerPageChange{{/if}}{{#if hasExportBlock}},
+    exportMonth,
+    exportPending,
+    exportOpenRateReport{{/if}}{{#if hasLoginAs}},
+    loginAsStoreManager{{/if}}
+  }
+}

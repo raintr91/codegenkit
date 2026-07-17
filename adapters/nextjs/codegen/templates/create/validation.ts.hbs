@@ -1,0 +1,16 @@
+import { z } from 'zod';
+
+import { {{entityPascal}}CreateRequestSchema } from '@portal/models/{{entity}}';
+import { fields } from '@portal/models/common/fields';
+
+export const {{entityCamel}}CreateObjectSchema = z.object({
+{{#each formFieldSchemas}}
+  {{key}}: {{{zodField}}},
+{{/each}}
+});
+
+/** Strict form validation (portal validations layer). */
+export const {{entityCamel}}CreateFormSchema = {{entityCamel}}CreateObjectSchema;
+
+/** API contract — re-export from models. */
+export { {{entityPascal}}CreateRequestSchema };

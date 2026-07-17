@@ -1,0 +1,59 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+import { mockNuxtApiFetch } from '~/tests/unit/_helpers/nuxtGlobals'
+
+const mockSearch = vi.fn()
+
+vi.mock('~/mocks/{{entity}}.mock', () => ({
+  {{entityCamel}}MockSearch: (...args: unknown[]) => mockSearch(...args)
+}))
+
+import { use{{entityPascal}}List } from '~/composables/{{entity}}/use{{entityPascal}}List'
+
+describe('composables/{{entity}}/use{{entityPascal}}List', () => {
+  const validRow = {{{validRowJson}}} as const
+
+  beforeEach(() => {
+    mockSearch.mockReset()
+    mockNuxtApiFetch.mockReset()
+    mockSearch.mockResolvedValue({ items: [validRow], total: 1 })
+  })
+
+  it('load() fills items and total from prototype mock search', async () => {
+    const { load, items, total, pending } = use{{entityPascal}}List()
+
+    await load()
+
+    expect(mockSearch).toHaveBeenCalled()
+    expect(items.value).toHaveLength(1)
+    expect(items.value[0]).toEqual(validRow)
+    expect(total.value).toBe(1)
+    expect(pending.value).toBe(false)
+  })
+
+  it('onReset() restores default per_page and reloads', async () => {
+    const { onReset, query } = use{{entityPascal}}List()
+
+    query.value = { per_page: 20, page: 2 }
+    await onReset()
+
+    expect(query.value).toEqual({ per_page: {{defaultPageSize}} })
+    expect(mockSearch).toHaveBeenCalled()
+  })
+{{#if hasExportBlock}}
+  it('exportOpenRateReport() calls service export with month', async () => {
+    mockNuxtApiFetch.mockResolvedValue(new Blob(['csv'], { type: 'text/csv' }))
+    const { exportOpenRateReport, exportMonth, exportPending } = use{{entityPascal}}List()
+
+    exportMonth.value = '2025-05'
+    await exportOpenRateReport()
+
+    expect(mockNuxtApiFetch).toHaveBeenCalledWith('{{exportEndpoint.path}}', {
+      method: '{{exportEndpoint.method}}',
+      body: { month: '2025-05' },
+      responseType: 'blob'
+    })
+    expect(exportPending.value).toBe(false)
+  })
+{{/if}}
+})

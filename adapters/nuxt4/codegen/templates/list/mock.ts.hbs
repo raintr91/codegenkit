@@ -1,0 +1,27 @@
+import type { {{entityPascal}}ListResponse } from '~/models/{{entity}}/{{entity}}.types'
+
+const PAGE_SIZE = {{defaultPageSize}}
+
+const mockItemsPage1: Record<string, unknown>[] = {{{json mockRowsPage1}}}
+
+const mockItemsPage2: Record<string, unknown>[] = {{{json mockRowsPage2}}}
+
+/** Prototype mock — ≥2 pages for pagination (portal-gen). */
+export async function {{entityCamel}}MockSearch(
+  query: Record<string, unknown>
+): Promise<{{entityPascal}}ListResponse> {
+  const page = Number(query.page ?? 1)
+  const name = String(query.name ?? '').toLowerCase()
+
+  let items = page <= 1 ? [...mockItemsPage1] : [...mockItemsPage2]
+  if (name) {
+    items = items.filter((row) => String(row.name ?? '').toLowerCase().includes(name))
+  }
+
+  return {
+    items,
+    total: mockItemsPage1.length + mockItemsPage2.length
+  }
+}
+
+export const {{entityCamel}}MockPageSize = PAGE_SIZE

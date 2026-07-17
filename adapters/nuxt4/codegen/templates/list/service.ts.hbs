@@ -1,0 +1,37 @@
+import {
+  {{entityPascal}}ListResponseSchema
+} from '~/models/{{entity}}/{{entity}}.schema'
+import type { {{entityPascal}}ListResponse } from '~/models/{{entity}}/{{entity}}.types'
+import type { ApiResponse } from '~/models/common/api.types'
+import { assertApiSuccess } from '~/services/shared/apiResponse'
+import { parseApiData } from '~/services/shared/parseApiData'
+
+type ApiFetch = <T>(url: string, options?: Record<string, unknown>) => Promise<T>
+
+export type {{entityPascal}}SearchParams = Record<string, unknown> & {
+  page?: number
+  per_page?: number
+}
+
+export function create{{entityPascal}}Service(apiFetch: ApiFetch) {
+  return {
+    async search(params?: {{entityPascal}}SearchParams): Promise<{{entityPascal}}ListResponse> {
+      const res = await apiFetch<ApiResponse<unknown>>('{{listEndpoint.path}}', {
+        method: '{{listEndpoint.method}}'{{#if (eq listEndpoint.method 'POST')}},
+        body: params{{/if}}{{#if (eq listEndpoint.method 'GET')}},
+        query: params{{/if}}
+      })
+      assertApiSuccess(res)
+      return parseApiData({{entityPascal}}ListResponseSchema, res.data)
+    }{{#if exportEndpoint}},
+    async exportReport(body: Record<string, unknown>): Promise<Blob> {
+      return apiFetch<Blob>('{{exportEndpoint.path}}', {
+        method: '{{exportEndpoint.method}}',
+        body,
+        responseType: 'blob'
+      })
+    }{{/if}}
+  }
+}
+
+export type {{entityPascal}}Service = ReturnType<typeof create{{entityPascal}}Service>

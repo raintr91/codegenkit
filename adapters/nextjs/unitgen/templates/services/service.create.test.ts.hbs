@@ -1,0 +1,28 @@
+import { describe, expect, it } from 'vitest'
+
+import { create{{entityPascal}}Service } from '@/services/{{entity}}.service'
+import { mockApiFetch } from '../_helpers/mockApiFetch'
+
+describe('services/{{entity}}.service create', () => {
+  const validPayload = {{{validFormValuesJson}}} as const
+  const createdRow = {
+    id: 1,
+    ...validPayload,
+    created_at: '2026-01-01T00:00:00.000Z'
+  }
+
+  it('create calls create endpoint with body and parses response', async () => {
+    const apiFetch = mockApiFetch({
+      success: true,
+      data: createdRow
+    })
+
+    const result = await create{{entityPascal}}Service(apiFetch).create(validPayload)
+
+    expect(apiFetch).toHaveBeenCalledWith('{{createEndpoint.path}}', {
+      method: '{{createEndpoint.method}}',
+      body: validPayload
+    })
+    expect(result).toEqual(createdRow)
+  })
+})

@@ -1,0 +1,20 @@
+import { describe, expect, it } from 'vitest'
+
+import { create{{entityPascal}}Service } from '~/services/{{entity}}.service'
+import { mockApiFetch } from '~/tests/unit/_helpers/mockApiFetch'
+
+describe('services/{{entity}}.service export', () => {
+  it('exportReport calls export endpoint with blob response', async () => {
+    const blob = new Blob(['report'], { type: 'text/csv' })
+    const apiFetch = mockApiFetch(blob)
+
+    const result = await create{{entityPascal}}Service(apiFetch).exportReport({ month: '2025-05' })
+
+    expect(apiFetch).toHaveBeenCalledWith('{{exportEndpoint.path}}', {
+      method: '{{exportEndpoint.method}}',
+      body: { month: '2025-05' },
+      responseType: 'blob'
+    })
+    expect(result).toBe(blob)
+  })
+})

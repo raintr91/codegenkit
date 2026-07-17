@@ -1,0 +1,43 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Button, Input, Label } from '@/components/ui';
+import { use{{entityPascal}}Form } from '@/hooks/{{entity}}/use{{entityPascal}}Form';
+
+export default function {{entityPascal}}CreatePage() {
+  const router = useRouter();
+  const { values, setField, pending, errorMsg, submit } = use{{entityPascal}}Form();
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const ok = await submit();
+    if (ok) router.push('{{listRoutePath}}');
+  }
+
+  return (
+    <div data-testid="{{testIdModule}}-page" className="p-6">
+      <h1 className="text-2xl font-semibold">{{title}}</h1>
+      <form
+        onSubmit={onSubmit}
+        className="mt-6 max-w-lg space-y-4"
+        data-testid="{{testIdModule}}-form"
+      >
+{{#each formFields}}
+        <div>
+          <Label htmlFor="{{key}}">{{label}}</Label>
+          <Input
+            id="{{key}}"
+            data-testid="{{../testIdModule}}-{{key}}-input"
+            value={String(values.{{key}} ?? '')}
+            onChange={(event) => setField('{{key}}', event.target.value)}
+          />
+        </div>
+{{/each}}
+        {errorMsg ? <p className="text-sm text-destructive">{errorMsg}</p> : null}
+        <Button type="submit" disabled={pending} data-testid="{{testIdModule}}-submit-btn">
+          {pending ? 'Saving…' : 'Save'}
+        </Button>
+      </form>
+    </div>
+  );
+}

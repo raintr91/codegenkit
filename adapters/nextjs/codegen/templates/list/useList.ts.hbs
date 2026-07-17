@@ -1,0 +1,150 @@
+'use client';
+
+import { useCallback, useMemo, useState } from 'react';
+import type { DataTableColumn } from '@/components/molecules/data-table-types';
+import { create{{entityPascal}}Service } from '@/services/{{entity}}.service';
+import { {{entityCamel}}MockSearch } from '@/mocks/{{entity}}.mock';
+
+/**
+ * {{title}} — list hook (portal-gen).
+ * Mock boundary: replace {{entityCamel}}MockSearch with service.search on /wire.
+ */
+export function use{{entityPascal}}List() {
+  const service = useMemo(() => create{{entityPascal}}Service(), []);
+
+  const [pending, setPending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [items, setItems] = useState<Record<string, unknown>[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
+  const [query, setQuery] = useState<Record<string, unknown>>({ per_page: {{defaultPageSize}} });
+{{#if hasExportBlock}}
+  const [exportMonth, setExportMonth] = useState(defaultExportMonth());
+  const [exportPending, setExportPending] = useState(false);
+{{/if}}
+
+  const filters = useMemo(
+    () => [
+{{#each filters}}
+      {
+        name: '{{name}}',
+        label: '{{label}}',
+        type: '{{type}}'{{#if placeholder}},
+        placeholder: '{{placeholder}}'{{/if}}
+      }{{#unless @last}},{{/unless}}
+{{/each}}
+    ],
+    [],
+  );
+
+  const columns = useMemo<DataTableColumn[]>(
+    () => [
+{{#each columns}}
+      {
+        key: '{{key}}',
+        title: '{{title}}'{{#if sortable}},
+        sortable: true{{/if}}{{#if align}},
+        align: '{{align}}'{{/if}}
+      }{{#unless @last}},{{/unless}}
+{{/each}}
+    ],
+    [],
+  );
+
+  const searchKeys = useMemo(() => columns.map((column) => column.key), [columns]);
+
+{{#if hasPerPageToolbar}}
+  const perPage = Number(query.per_page ?? {{defaultPageSize}});
+
+  const onPerPageChange = useCallback(
+    (value: number) => {
+      setQuery((current) => ({ ...current, per_page: value, page: 1 }));
+    },
+    [],
+  );
+{{/if}}
+
+  const load = useCallback(async () => {
+    setPending(true);
+    setErrorMsg(null);
+    try {
+      const result = await {{entityCamel}}MockSearch(query);
+      setItems(result.items);
+      setTotal(result.total ?? result.items.length);
+    } catch (error: unknown) {
+      setErrorMsg((error as Error)?.message ?? 'Cannot load {{title}}');
+      setItems([]);
+      setTotal(null);
+    } finally {
+      setPending(false);
+    }
+  }, [query]);
+
+  const onSearch = useCallback(() => load(), [load]);
+
+  const onReset = useCallback(async () => {
+    const nextQuery = { per_page: {{defaultPageSize}} };
+    setQuery(nextQuery);
+    setPending(true);
+    setErrorMsg(null);
+    try {
+      const result = await {{entityCamel}}MockSearch(nextQuery);
+      setItems(result.items);
+      setTotal(result.total ?? result.items.length);
+    } catch (error: unknown) {
+      setErrorMsg((error as Error)?.message ?? 'Cannot load {{title}}');
+      setItems([]);
+      setTotal(null);
+    } finally {
+      setPending(false);
+    }
+  }, []);
+
+{{#if hasExportBlock}}
+  const exportOpenRateReport = useCallback(async () => {
+    setExportPending(true);
+    try {
+      await service.exportReport?.({ month: exportMonth });
+    } finally {
+      setExportPending(false);
+    }
+  }, [exportMonth, service]);
+{{/if}}
+
+{{#if hasLoginAs}}
+  const loginAsStoreManager = useCallback(async (manager: { id: number }) => {
+    console.info('loginAsStoreManager', manager.id);
+  }, []);
+{{/if}}
+
+  return {
+    pending,
+    errorMsg,
+    items,
+    total,
+    query,
+    setQuery,
+    filters,
+    columns,
+    searchKeys,
+    load,
+    onSearch,
+    onReset,
+    service{{#if hasPerPageToolbar}},
+    perPage,
+    onPerPageChange{{/if}}{{#if hasExportBlock}},
+    exportMonth,
+    setExportMonth,
+    exportPending,
+    exportOpenRateReport{{/if}}{{#if hasLoginAs}},
+    loginAsStoreManager{{/if}}
+  };
+}
+
+{{#if hasExportBlock}}
+function defaultExportMonth(): string {
+  const date = new Date();
+  date.setMonth(date.getMonth() - 1);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${date.getFullYear()}-${month}`;
+}
+{{/if}}

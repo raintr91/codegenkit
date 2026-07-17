@@ -1,0 +1,25 @@
+import { describe, expect, it } from 'vitest'
+
+import { create{{entityPascal}}Service } from '@/services/{{entity}}.service'
+import { mockApiFetch } from '../_helpers/mockApiFetch'
+
+describe('services/{{entity}}.service', () => {
+  const validRow = {{{validRowJson}}} as const
+
+  it('search calls list endpoint and parses list envelope', async () => {
+    const apiFetch = mockApiFetch({
+      success: true,
+      data: { items: [validRow], total: 1 }
+    })
+
+    const result = await create{{entityPascal}}Service(apiFetch).search({ page: 1, per_page: 100 })
+
+    expect(apiFetch).toHaveBeenCalledWith('{{listEndpoint.path}}', {
+      method: '{{listEndpoint.method}}'{{#if (eq listEndpoint.method 'GET')}},
+      query: { page: 1, per_page: 100 }{{/if}}{{#if (eq listEndpoint.method 'POST')}},
+      body: { page: 1, per_page: 100 }{{/if}}
+    })
+    expect(result.items).toHaveLength(1)
+    expect(result.items[0]).toEqual(validRow)
+  })
+})

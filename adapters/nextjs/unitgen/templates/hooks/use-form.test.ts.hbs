@@ -1,0 +1,51 @@
+import { renderHook, act } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+const mockCreate = vi.fn()
+
+vi.mock('@/mocks/{{entity}}.mock', () => ({
+  {{entityCamel}}MockCreate: (...args: unknown[]) => mockCreate(...args)
+}))
+
+import { use{{entityPascal}}Form } from '@/hooks/{{entity}}/use{{entityPascal}}Form'
+
+describe('hooks/{{entity}}/use{{entityPascal}}Form', () => {
+  const validForm = {{{validFormValuesJson}}} as const
+
+  beforeEach(() => {
+    mockCreate.mockReset()
+    mockCreate.mockResolvedValue({ id: 1, ...validForm })
+  })
+
+  it('submit() calls mock create with parsed payload', async () => {
+    const { result } = renderHook(() => use{{entityPascal}}Form())
+
+    act(() => {
+      for (const [key, value] of Object.entries(validForm)) {
+        result.current.setField(key, value)
+      }
+    })
+
+    let ok = false
+    await act(async () => {
+      ok = await result.current.submit()
+    })
+
+    expect(ok).toBe(true)
+    expect(mockCreate).toHaveBeenCalled()
+    expect(result.current.pending).toBe(false)
+  })
+
+  it('submit() returns false when validation fails', async () => {
+    const { result } = renderHook(() => use{{entityPascal}}Form())
+
+    let ok = true
+    await act(async () => {
+      ok = await result.current.submit()
+    })
+
+    expect(ok).toBe(false)
+    expect(mockCreate).not.toHaveBeenCalled()
+    expect(result.current.errorMsg).toBeTruthy()
+  })
+})

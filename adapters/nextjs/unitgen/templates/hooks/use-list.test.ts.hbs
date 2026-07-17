@@ -1,0 +1,63 @@
+import { renderHook, act } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+const mockSearch = vi.fn()
+
+vi.mock('@/mocks/{{entity}}.mock', () => ({
+  {{entityCamel}}MockSearch: (...args: unknown[]) => mockSearch(...args)
+}))
+
+import { use{{entityPascal}}List } from '@/hooks/{{entity}}/use{{entityPascal}}List'
+
+describe('hooks/{{entity}}/use{{entityPascal}}List', () => {
+  const validRow = {{{validRowJson}}} as const
+
+  beforeEach(() => {
+    mockSearch.mockReset()
+    mockSearch.mockResolvedValue({ items: [validRow], total: 1 })
+  })
+
+  it('load() fills items and total from prototype mock search', async () => {
+    const { result } = renderHook(() => use{{entityPascal}}List())
+
+    await act(async () => {
+      await result.current.load()
+    })
+
+    expect(mockSearch).toHaveBeenCalled()
+    expect(result.current.items).toHaveLength(1)
+    expect(result.current.items[0]).toEqual(validRow)
+    expect(result.current.total).toBe(1)
+    expect(result.current.pending).toBe(false)
+  })
+
+  it('onReset() restores default per_page and reloads', async () => {
+    const { result } = renderHook(() => use{{entityPascal}}List())
+
+    act(() => {
+      result.current.setQuery({ per_page: 20, page: 2 })
+    })
+
+    await act(async () => {
+      await result.current.onReset()
+    })
+
+    expect(result.current.query).toEqual({ per_page: {{defaultPageSize}} })
+    expect(mockSearch).toHaveBeenCalled()
+  })
+{{#if hasExportBlock}}
+  it('exportOpenRateReport() calls service export with month', async () => {
+    const { result } = renderHook(() => use{{entityPascal}}List())
+
+    act(() => {
+      result.current.setExportMonth('2025-05')
+    })
+
+    await act(async () => {
+      await result.current.exportOpenRateReport()
+    })
+
+    expect(result.current.exportPending).toBe(false)
+  })
+{{/if}}
+})

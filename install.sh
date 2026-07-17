@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+REPO="${CODEGENKIT_REPO:-raintr91/Codegenkit}"
+INSTALL_DIR="${CODEGENKIT_INSTALL_DIR:-$HOME/.codegenkit}"
+BIN_DIR="${CODEGENKIT_BIN_DIR:-$HOME/.local/bin}"
+REF="${CODEGENKIT_REF:-main}"
+if [ "${1:-}" = "--uninstall" ]; then
+  rm -f "$BIN_DIR/codegenkit" "$BIN_DIR/codegenkit-mcp"
+  rm -rf "$INSTALL_DIR"
+  echo "codegenkit uninstalled"
+  exit 0
+fi
+command -v node >/dev/null
+command -v git >/dev/null
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+git clone --depth 1 --branch "$REF" "https://github.com/$REPO.git" "$tmpdir/src"
+rm -rf "$INSTALL_DIR"
+mkdir -p "$(dirname "$INSTALL_DIR")"
+mv "$tmpdir/src" "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+if command -v pnpm >/dev/null; then pnpm install && pnpm build; else npm install && npm run build; fi
+mkdir -p "$BIN_DIR"
+ln -sf "$INSTALL_DIR/bin/codegenkit.mjs" "$BIN_DIR/codegenkit"
+ln -sf "$INSTALL_DIR/bin/codegenkit-mcp.mjs" "$BIN_DIR/codegenkit-mcp"
+chmod +x "$INSTALL_DIR/bin/"*.mjs
+echo "Installed Codegenkit. Next: codegenkit init --type=fe --adapter=nuxt4 --yes"

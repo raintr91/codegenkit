@@ -1,0 +1,35 @@
+---
+description: shadcn canonical, registry hashtags — registries/design.registry.json
+globs: base-docs/templates/*.yaml, codegen/runners/**/*, registries/*.json
+alwaysApply: false
+---
+
+# Design vocabulary
+
+SSOT: `registries/design.registry.json` · `pnpm portal:registry` · hub: `PORTAL-CODEGEN.md`
+
+## Hashtags (grill → `tags:`)
+
+| Prefix | Example |
+|--------|---------|
+| `#shell:` | `DataListPage` (list default) |
+| `#pattern:` | `CRUD` |
+| `#ui:` | shadcn primitive |
+| `#widget:` | form field |
+| `#render:` | `text`, `chip` |
+| `#style:` | `compact`, `flat` |
+| `#needs-ui:` | planned widget — prototype implements |
+
+List default grill: `#shell: DataListPage`, `#pattern: CRUD`, `#style: shadcn/ui`, `compact`, `flat`.
+
+Custom list: keep `#shell: DataListPage` + `overrideCommonPattern: true` → `page.custom.vue.hbs`.
+
+## Grill
+
+1. BA bullet → `lookupAlias()` in registry
+2. Low confidence → ask member
+3. `pnpm portal:gen:dry` must pass
+
+Detail: `.cursor/extracts/platform-design-registry.md` · `DESIGN-REGISTRY-PROMOTION.md`
+
+Do not invent component names outside registry or copy Vuetify naming.

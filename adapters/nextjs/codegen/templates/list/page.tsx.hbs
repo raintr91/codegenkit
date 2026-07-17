@@ -1,0 +1,37 @@
+'use client';
+
+import { useEffect } from 'react';
+import { DataListPage } from '@/components/common';
+import { use{{entityPascal}}List } from '@/hooks/{{entity}}/use{{entityPascal}}List';
+
+export default function {{entityPascal}}ListPage() {
+  const {
+    columns,
+    items,
+    pending,
+    total,
+    searchKeys,
+    load,
+  } = use{{entityPascal}}List();
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return (
+    <DataListPage
+      title="{{title}}"
+      testId="{{testIdModule}}-page"
+      tableTestId="{{testIdModule}}-table"
+      toolbarTestId="{{testIdModule}}-toolbar"
+      paginationTestId="{{testIdModule}}-pagination"
+      rowTestId="{{testIdModule}}-row"
+      columns={columns}
+      items={items}
+      pending={pending}
+      total={total ?? undefined}
+      pageSize={{{defaultPageSize}}}
+      searchKeys={searchKeys}
+    />
+  );
+}

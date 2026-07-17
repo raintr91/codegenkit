@@ -1,0 +1,29 @@
+---
+description: /prototype, /grill-prototype — UI prototype with mock API boundary
+globs: "{pages,components,composables,mocks,src/app,src/components,src/hooks}/**/*.{vue,ts,tsx}"
+alwaysApply: false
+---
+
+# Team Flow — Prototype
+
+Active: `/prototype` · `/grill-prototype` — **một** command / session.
+
+| Command | Skill |
+|---------|-------|
+| `/prototype` | `.cursor/skills/prototype/SKILL.md` |
+| `/grill-prototype` | `.cursor/skills/grill-prototype/SKILL.md` |
+
+Prerequisite: docs hub đã grill → `pnpm portal:gen:dry --id …` OK.  
+Guide: `base-docs/platform/toolchain/PORTAL-CODEGEN.md`.
+
+## Thứ tự
+
+1. Quét `#needs-component` / columns `render: custom` — chỉ tạo Mo* còn thiếu.
+2. `pnpm portal:gen --id W-…` (hoặc MCP `gen`) — đọc `…/code/{W-…}/generated/HANDOFF.md`.
+3. Vá slot · auth bypass · gap; **không** sửa YAML business trên hub khi prototype.
+
+- Source: grill-approved hub `ir/spec.yaml`
+- Real UI; mock chỉ API boundary
+- **Không** backend thật — `/wire` thay mock
+- `data-testid` sớm (`E2E-TESTIDS.md` trên hub)
+- **Không** viết lại scaffold đã gen

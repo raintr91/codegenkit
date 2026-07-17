@@ -1,0 +1,9 @@
+import type { z } from 'zod'
+
+import type {
+  {{entityPascal}}CreateRequestSchema,
+  {{entityPascal}}Schema
+} from '~/models/{{entity}}/{{entity}}.schema'
+
+export type {{entityPascal}}CreateRequest = z.infer<typeof {{entityPascal}}CreateRequestSchema>
+export type {{entityPascal}} = z.infer<typeof {{entityPascal}}Schema>

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "package": "@platform/codegenkit",
+  "version": "0.1.0",
+  "types": ["fe"],
+  "requires": [],
+  "optional": ["@platform/artifactgraph", "codegraph"],
+  "tools": [
+    "codegen_gen",
+    "codegen_gen_dry",
+    "unit_gen",
+    "unit_gen_dry",
+    "codegen_registry_validate",
+    "unit_registry_validate"
+  ],
+  "skillsByType": {
+    "fe": ["prototype", "wire", "unit", "grill-prototype", "grill-unit"]
+  },
+  "adapters": ["nuxt4", "nextjs"],
+  "compatibility": {
+    "node": ">=22",
+    "toolApi": 1,
+    "harnessApi": 1
+  }
+}

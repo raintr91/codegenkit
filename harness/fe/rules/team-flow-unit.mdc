@@ -1,0 +1,25 @@
+---
+description: Unit Test — dev lane Vitest (/unit → /grill-unit)
+globs: "{composables,services,models,validations,utils,stores,tests/unit}/**/*.{ts,vue}"
+alwaysApply: false
+---
+
+# /unit · /grill-unit — Dev lane
+
+Diagram: `base-docs/platform/toolchain/UNIT-PHASE-DIAGRAM.md` — **không** nằm FULL-CYCLE / TEST-PHASE.  
+Hub: `base-docs/platform/toolchain/PORTAL-CODEGEN.md`  
+Skills: `.cursor/skills/unit/SKILL.md` · `.cursor/skills/grill-unit/SKILL.md`  
+Extract: `.cursor/extracts/portal-unit-workflow.md`, `portal-unit-test-tags.md`, `verify-gate.md`
+
+## `/unit`
+
+- Manifest-first: `unit.manifest.json` + `UNIT-HANDOFF.md`
+- Gọi `pnpm portal:unit-gen` khi thiếu smoke; xử lý `needsUnit[]` / `#needs-unit-test:*`
+- Tách file test thiếu theo registry (1 source logic → 1 test file)
+- Logic only — **không** mount page/component; mock `$apiFetch` / `nuxtGlobals`
+- Done: `needsUnit` clear, vitest scoped green → **`/grill-unit`**
+
+## `/grill-unit`
+
+- Sau `/unit` — coverage scoped + map `reqIds`; **không** gọi `portal:unit-gen`
+- Thiếu file test → báo quay `/unit`

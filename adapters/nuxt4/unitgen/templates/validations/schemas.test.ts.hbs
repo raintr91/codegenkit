@@ -1,0 +1,19 @@
+import { describe, expect, it } from 'vitest'
+
+import { {{entityCamel}}CreateObjectSchema } from '~/validations/{{entity}}/schemas'
+
+describe('validations/{{entity}}/schemas', () => {
+  const validForm = {{{validFormValuesJson}}} as const
+
+  it('parses valid create payload', () => {
+    const result = {{entityCamel}}CreateObjectSchema.safeParse(validForm)
+    expect(result.success).toBe(true)
+  })
+{{#each requiredFormFields}}
+
+  it('rejects empty required field {{key}}', () => {
+    const result = {{../entityCamel}}CreateObjectSchema.safeParse({ ...validForm, {{key}}: '' })
+    expect(result.success).toBe(false)
+  })
+{{/each}}
+})

@@ -1,0 +1,15 @@
+import type { {{entityPascal}}, {{entityPascal}}CreateRequest } from '@portal/models/{{entity}}';
+
+/**
+ * Prototype mock create — replace with service.create on /wire.
+ */
+export async function {{entityCamel}}MockCreate(
+  payload: {{entityPascal}}CreateRequest,
+): Promise<{{entityPascal}}> {
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  return {
+    id: Date.now(),
+    ...payload,
+  } as {{entityPascal}};
+}

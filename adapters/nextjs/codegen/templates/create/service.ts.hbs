@@ -1,0 +1,25 @@
+import {
+  {{entityPascal}}CreateRequestSchema,
+  {{entityPascal}}ReadSchema,
+} from '@portal/models/{{entity}}';
+import type { {{entityPascal}}CreateRequest, {{entityPascal}} } from '@portal/models/{{entity}}';
+import type { ApiResponse } from '@portal/models/common/api.types';
+import { apiFetch } from '@/lib/api-client';
+import { assertApiSuccess, parseApiData } from '@/services/shared/api-response';
+
+type ApiFetch = typeof apiFetch;
+
+export function create{{entityPascal}}Service(fetch: ApiFetch = apiFetch) {
+  return {
+    async create(payload: {{entityPascal}}CreateRequest): Promise<{{entityPascal}}> {
+      const res = await fetch<ApiResponse<unknown>>('{{createEndpoint.path}}', {
+        method: '{{createEndpoint.method}}',
+        body: payload,
+      });
+      assertApiSuccess(res);
+      return parseApiData({{entityPascal}}ReadSchema, res.data);
+    },
+  };
+}
+
+export type {{entityPascal}}Service = ReturnType<typeof create{{entityPascal}}Service>;

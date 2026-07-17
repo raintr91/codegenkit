@@ -1,0 +1,37 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { create{{entityPascal}}Service } from '@/services/{{entity}}.service'
+import { mockApiFetch } from '../_helpers/mockApiFetch'
+
+describe('services/{{entity}}.service wire', () => {
+  const validRow = {{{validRowJson}}} as const
+
+  it('search rejects API error envelope', async () => {
+    const apiFetch = mockApiFetch({ success: false, message: 'List failed' })
+
+    await expect(
+      create{{entityPascal}}Service(apiFetch).search({ page: 1 })
+    ).rejects.toThrow()
+  })
+
+  it('search parses meta.total when present', async () => {
+    const apiFetch = mockApiFetch({
+      success: true,
+      data: { items: [validRow], total: 42, meta: { total: 42 } }
+    })
+
+    const result = await create{{entityPascal}}Service(apiFetch).search({ page: 1 })
+
+    expect(result.total).toBe(42)
+    expect(result.items[0]).toEqual(validRow)
+  })
+{{#if exportEndpoint}}
+  it('exportReport propagates apiFetch rejection', async () => {
+    const apiFetch = vi.fn().mockRejectedValue(new Error('export failed'))
+
+    await expect(
+      create{{entityPascal}}Service(apiFetch).exportReport({ month: '2025-05' })
+    ).rejects.toThrow('export failed')
+  })
+{{/if}}
+})

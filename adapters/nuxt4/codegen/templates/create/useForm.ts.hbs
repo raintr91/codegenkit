@@ -1,0 +1,29 @@
+import { useApiForm } from '~/composables/forms/useApiForm'
+import { create{{entityPascal}}Service } from '~/services/{{entity}}.service'
+import { {{entityCamel}}CreateSchema } from '~/validations/{{entity}}/schemas'
+import type { {{entityPascal}}CreateRequest } from '~/models/{{entity}}/{{entity}}.types'
+import { {{entityCamel}}MockCreate } from '~/mocks/{{entity}}.mock'
+
+export function use{{entityPascal}}Form() {
+  const { $apiFetch } = useNuxtApp()
+  const service = create{{entityPascal}}Service($apiFetch)
+  const router = useRouter()
+
+  const initialValues: {{entityPascal}}CreateRequest = {
+{{#each formFields}}
+    {{key}}: {{#if (eq type 'number')}}0{{else}}''{{/if}},
+{{/each}}
+  }
+
+  const { onSubmit, errors, apiError, isSubmitting } = useApiForm<{{entityPascal}}CreateRequest>({
+    validationSchema: {{entityCamel}}CreateSchema,
+    initialValues,
+    submit: async (values) => {
+      // Prototype mock — use service.create on /wire
+      await {{entityCamel}}MockCreate(values)
+      await router.push('{{route.path}}'.replace(/\/create$/, '') || '/')
+    }
+  })
+
+  return { onSubmit, errors, apiError, isSubmitting, initialValues, service }
+}

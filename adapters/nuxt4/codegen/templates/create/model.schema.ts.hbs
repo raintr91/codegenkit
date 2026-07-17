@@ -1,0 +1,14 @@
+import { z } from 'zod'
+
+import { fields } from '~/models/common/fields'
+
+export const {{entityPascal}}CreateRequestSchema = z.object({
+{{#each formFieldSchemas}}
+  {{key}}: {{{zodField}}},
+{{/each}}
+})
+
+export const {{entityPascal}}Schema = {{entityPascal}}CreateRequestSchema.extend({
+  id: fields.id,
+  created_at: fields.createdAt
+})

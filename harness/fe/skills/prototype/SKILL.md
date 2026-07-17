@@ -1,0 +1,39 @@
+---
+name: prototype
+description: /prototype — UI from docs-hub ir/spec with mock API via Codegenkit.
+disable-model-invocation: true
+---
+
+# /prototype — UI Prototype (Mock API Boundary)
+
+**Owner:** Codegenkit (`--type=fe`) · Adapters: `nuxt4` | `nextjs`
+
+## Artifact
+
+Load docs-hub Code `ir/spec.yaml` via `--id` (for example `W-AD-AUTH-001`):
+
+```text
+product/components/{CMP-…}/code/{W-…}/ir/spec.yaml
+```
+
+Do not invent sibling docs-hub paths. Pass `CODEGENKIT_DOCS_ROOT` or `--docs-root`.
+
+## Workflow
+
+```bash
+codegenkit gen:dry --adapter=nuxt4 --docs-root=/path/to/docs-hub -- --id W-AD-AUTH-001
+codegenkit gen --adapter=nuxt4 --docs-root=/path/to/docs-hub -- --id W-AD-AUTH-001
+```
+
+Compatibility shims on FE repos may still expose `pnpm portal:gen*`; they must call Codegenkit.
+
+## Accelerators (optional)
+
+```text
+if ArtifactGraph available: recommend/check allowlisted gen command
+else: run codegenkit gen:dry / gen directly
+
+Missing ArtifactGraph never blocks prototype generation.
+```
+
+Docs render / `spec:split` remain docs-hub / Bundlekit handoffs.

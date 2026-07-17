@@ -1,0 +1,65 @@
+'use client';
+
+import { useEffect } from 'react';
+import { DataListPage } from '@/components/common';
+import { use{{entityPascal}}List } from '@/hooks/{{entity}}/use{{entityPascal}}List';
+
+/**
+ * Custom list shell — extend slots / toolbar in /prototype, then re-run portal:gen.
+ */
+export default function {{entityPascal}}ListPage() {
+  const {
+    columns,
+    items,
+    pending,
+    total,
+    searchKeys,
+    load,
+  } = use{{entityPascal}}List();
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return (
+    <DataListPage
+      title="{{title}}"
+      testId="{{testIdModule}}-page"
+      tableTestId="{{testIdModule}}-table"
+      toolbarTestId="{{testIdModule}}-toolbar"
+      paginationTestId="{{testIdModule}}-pagination"
+      rowTestId="{{testIdModule}}-row"
+      columns={columns}
+      items={items}
+      pending={pending}
+      total={total ?? undefined}
+      pageSize={{{defaultPageSize}}}
+      searchKeys={searchKeys}
+      renderCell={(key, _row, value) => {
+{{#each slotBindings}}
+        if (key === '{{slot}}') {
+{{#if wired}}
+          return (
+            <{{component}}
+              {{#if (eq valueProp 'label')}}
+              label={String(value ?? '')}
+              {{else}}
+              {{valueProp}}={value}
+              {{/if}}
+              testId="{{../testIdModule}}-{{slot}}"
+            />
+          );
+{{else}}
+          return (
+            <span data-testid="{{../testIdModule}}-{{slot}}-placeholder">
+              {String(value ?? '')}
+            </span>
+          );
+{{/if}}
+        }
+{{/each}}
+        return undefined;
+      }}
+    />
+  );
+}

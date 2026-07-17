@@ -1,0 +1,55 @@
+<script setup lang="ts">
+import { use{{entityPascal}}List } from '~/composables/{{entity}}/use{{entityPascal}}List'
+
+definePageMeta({
+  layout: 'dashboard'
+})
+
+const {  filters,
+  columns,
+  items,
+  query,
+  pending,
+  total,
+  load,
+  onSearch,
+  onReset
+} = use{{entityPascal}}List()
+
+onMounted(load)
+</script>
+
+<template>
+  <DataListPage
+    :title="'{{title}}'"
+    test-id="{{testIdModule}}-page"
+    filter-test-id="{{testIdModule}}-search-form"
+    table-test-id="{{testIdModule}}-table"
+    toolbar-test-id="{{testIdModule}}-toolbar"
+    pagination-test-id="{{testIdModule}}-pagination"
+    :filters="filters"
+    :columns="columns"
+    :items="items"
+    v-model:query="query"
+    :pending="pending"
+    :total="total ?? undefined"
+    :page-size="{{defaultPageSize}}"
+    @search="onSearch"
+    @reset="onReset"
+  >
+{{#each slotBindings}}
+    <template #{{slot}}="{ row, value }">
+{{#if wired}}
+      <{{component}}{{#if (eq valueProp 'label')}}
+        :label="String(value ?? '')"{{else}}
+        :{{valueProp}}="value"{{/if}}
+        :test-id="'{{../testIdModule}}-{{slot}}'"
+      />
+{{else}}
+      <!-- MANUAL: tag #needs-component: {{slot}}:MoYourComponent -->
+      <span :data-testid="'{{../testIdModule}}-{{slot}}-placeholder'">{{ "{{" }} value {{ "}}" }}</span>
+{{/if}}
+    </template>
+{{/each}}
+  </DataListPage>
+</template>

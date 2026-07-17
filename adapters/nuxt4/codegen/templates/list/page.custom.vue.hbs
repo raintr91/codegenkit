@@ -1,0 +1,105 @@
+<script setup lang="ts">
+import { use{{entityPascal}}List } from '~/composables/{{entity}}/use{{entityPascal}}List'
+
+definePageMeta({
+  layout: 'dashboard'
+})
+
+const {  filters,
+  columns,
+  items,
+  query,
+  pending,
+  total,
+  load,
+  onSearch,
+  onReset{{#if hasPerPageToolbar}},
+  perPage,
+  onPerPageChange{{/if}}{{#if hasExportBlock}},
+  exportMonth,
+  exportPending,
+  exportOpenRateReport{{/if}}{{#if hasLoginAs}},
+  loginAsStoreManager{{/if}}
+} = use{{entityPascal}}List()
+
+onMounted(load)
+</script>
+
+<template>
+  <DataListPage
+    :title="'{{title}}'"
+    test-id="{{testIdModule}}-page"
+    filter-test-id="{{testIdModule}}-search-form"
+    table-test-id="{{testIdModule}}-table"
+    toolbar-test-id="{{testIdModule}}-toolbar"
+    pagination-test-id="{{testIdModule}}-pagination"
+    total-test-id="{{testIdModule}}-total-btn"
+    :filters="filters"
+    :columns="columns"
+    :items="items"
+    v-model:query="query"
+    :pending="pending"
+    :total="total ?? undefined"
+    :total-label="'{{toolbar.totalLabel}}'"
+    :page-size="perPage"
+    @search="onSearch"
+    @reset="onReset"
+  >
+{{#if hasExportBlock}}
+    <template #above-toolbar>
+      <div class="flex flex-wrap items-end justify-center gap-4 rounded-lg border bg-card p-4">
+        <div class="space-y-1">
+          <Label for="{{testIdModule}}-export-month">開封率データ</Label>
+          <Input
+            id="{{testIdModule}}-export-month"
+            v-model="exportMonth"
+            type="month"
+            :test-id="'{{testIdModule}}-export-month-input'"
+          />
+        </div>
+        <Button
+          variant="default"
+          :disabled="exportPending"
+          :test-id="'{{testIdModule}}-export-report-btn'"
+          @click="exportOpenRateReport"
+        >
+          ダウンロード
+        </Button>
+      </div>
+    </template>
+{{/if}}
+{{#if hasPerPageToolbar}}
+    <template #toolbar-end>
+      <div class="flex flex-wrap items-center gap-2 text-sm text-foreground">
+        <span>{{perPageConfig.labelBefore}}</span>
+        <select
+          v-model.number="perPage"
+          class="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          :data-testid="'{{perPageConfig.testId}}'"
+          @change="onPerPageChange"
+        >
+          {{#each pageSizeOptions}}
+          <option :value="{{this}}">{{this}}</option>
+          {{/each}}
+        </select>
+        <span>{{perPageConfig.labelAfter}}</span>
+      </div>
+    </template>
+{{/if}}
+{{#each slotBindings}}
+    <template #{{slot}}="{ row, value }">
+{{#if wired}}
+      <{{component}}{{#if (eq valueProp 'label')}}
+        :label="String(value ?? '')"{{else}}
+        :{{valueProp}}="value"{{/if}}
+        :row="row"
+        :test-id="'{{../testIdModule}}-{{slot}}'"{{#if ../hasLoginAs}}{{#if (eq slot 'cell-managers')}}
+        @login-as="loginAsStoreManager"{{/if}}{{/if}}
+      />
+{{else}}
+      <span :data-testid="'{{../testIdModule}}-{{slot}}-placeholder'">{{ "{{" }} value {{ "}}" }}</span>
+{{/if}}
+    </template>
+{{/each}}
+  </DataListPage>
+</template>
