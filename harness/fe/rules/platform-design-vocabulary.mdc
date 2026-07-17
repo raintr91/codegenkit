@@ -1,18 +1,18 @@
 ---
-description: shadcn canonical, registry hashtags — registries/design.registry.json
-globs: base-docs/templates/*.yaml, codegen/runners/**/*, registries/*.json
+description: Registry-backed FE vocabulary for generated and handoff code
+globs: "{app,src,pages,components,composables,hooks,services,models,validations,registries}/**/*.{vue,ts,tsx,json}"
 alwaysApply: false
 ---
 
 # Design vocabulary
 
-SSOT: `registries/design.registry.json` · `pnpm portal:registry` · hub: `PORTAL-CODEGEN.md`
+SSOT: `registries/design.registry.json` · validate with `pnpm portal:registry`.
 
 ## Hashtags (grill → `tags:`)
 
 | Prefix | Example |
 |--------|---------|
-| `#shell:` | `DataListPage` (list default) |
+| `#shell:` | Registry-defined page/list shell |
 | `#pattern:` | `CRUD` |
 | `#ui:` | shadcn primitive |
 | `#widget:` | form field |
@@ -20,16 +20,13 @@ SSOT: `registries/design.registry.json` · `pnpm portal:registry` · hub: `PORTA
 | `#style:` | `compact`, `flat` |
 | `#needs-ui:` | planned widget — prototype implements |
 
-List default grill: `#shell: DataListPage`, `#pattern: CRUD`, `#style: shadcn/ui`, `compact`, `flat`.
-
-Custom list: keep `#shell: DataListPage` + `overrideCommonPattern: true` → `page.custom.vue.hbs`.
+Shell names and custom-template behavior are adapter/product registry data. Do
+not assume a Nuxt `.vue` shell in a Next.js target or vice versa.
 
 ## Grill
 
 1. BA bullet → `lookupAlias()` in registry
 2. Low confidence → ask member
-3. `pnpm portal:gen:dry` must pass
+3. `pnpm portal:gen:dry --id …` must pass.
 
-Detail: `.cursor/extracts/platform-design-registry.md` · `DESIGN-REGISTRY-PROMOTION.md`
-
-Do not invent component names outside registry or copy Vuetify naming.
+Do not invent component names outside the selected adapter registry.

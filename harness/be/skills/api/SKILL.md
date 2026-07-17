@@ -14,6 +14,8 @@ disable-model-invocation: true
 ```bash
 codegenkit api-gen:dry --adapter=fastapi -- --spec /path/to/ir/spec.yaml
 codegenkit api-gen --adapter=fastapi -- --spec /path/to/ir/spec.yaml
+codegenkit api-gen --adapter=fastapi -- --spec /path/to/ir/spec.yaml --force
+codegenkit api-unit-gen:dry --adapter=fastapi -- --spec /path/to/ir/spec.yaml
 
 codegenkit api-gen:dry --adapter=laravel -- --spec /path/to/ir/spec.yaml
 codegenkit api-gen --adapter=laravel -- --spec /path/to/ir/spec.yaml
@@ -28,6 +30,14 @@ docs hub or frontend checkout.
 
 Laravel supports the detected `modules-v1` profile only. FastAPI requires an
 explicit Python runtime or target virtual environment.
+
+FastAPI generates all nested module entities, with flat `entities` and legacy
+`codegen.entity` compatibility. Code and unit manifests retain SHA-256
+ownership: identical and unmodified managed files are safe, while unmanaged or
+locally modified files block the whole batch. Inspect dry-run statuses before
+using `--force`, which explicitly overwrites conflicts. Ambiguous global
+endpoints in a multi-entity spec are not shared across entities; the generator
+warns and uses entity-local CRUD defaults.
 
 ## Review requirements
 

@@ -100,6 +100,7 @@ export function runBeEngine(opts: {
         encoding: 'utf8',
         env: {
           ...env,
+          PYTHONDONTWRITEBYTECODE: '1',
           PYTHONPATH: [runners, codegenRunners, process.env.PYTHONPATH]
             .filter(Boolean)
             .join(path.delimiter),

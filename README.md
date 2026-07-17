@@ -2,7 +2,7 @@
 
 Independent MCP/harness package for FE and BE code generation.
 
-The installers default to immutable release tag `v0.3.3` and enforce the
+The installers default to immutable release tag `v0.3.4` and enforce the
 committed lockfile (`pnpm --frozen-lockfile` or `npm ci`). Set
 `CODEGENKIT_REF` / PowerShell `-Ref` only for an explicit alternate release.
 
@@ -56,7 +56,13 @@ checks that every alias targets an existing entry.
 ArtifactGraph is optional for allowlist recommendation only.
 
 The FastAPI adapter runs with `CODEGENKIT_PYTHON`, the target `.venv`, or
-`python3`; its environment needs `typer`, `PyYAML` and `Jinja2`.
+`python3`; its environment needs `PyYAML` and `Jinja2`.
+It generates every entity in `modules[*].entities[*]` (or flat `entities[*]`)
+as one preflighted batch. Generated code and unit manifests record SHA-256
+ownership: unchanged or previously owned files update safely, local/unmanaged
+files block writes, and `--force` explicitly replaces conflicts. Multi-entity
+endpoints are matched conservatively; ambiguous endpoints use isolated CRUD
+defaults with a warning instead of being cross-wired.
 
 The Laravel adapter targets the `modules-v1` layout: Laravel 12 with
 `nwidart/laravel-modules`, `artisan` and `composer.json` at the project root or

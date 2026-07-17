@@ -55,14 +55,100 @@ def python_type(field: dict) -> str:
   }.get(raw, "str")
 
 
-def resolve_codegen_context(spec: dict) -> dict:
-  codegen = spec.get("codegen") or {}
-  primary_module = (spec.get("modules") or [{}])[0]
-  flat_entity = (spec.get("entities") or [{}])[0]
-  primary_entity = (primary_module.get("entities") or [flat_entity])[0]
+def _matches_endpoint(endpoint: dict, module: str, entity: str) -> bool:
+  module_tokens = {module.lower(), to_kebab(module), to_snake(module)}
+  entity_tokens = {entity.lower(), to_kebab(entity), to_snake(entity), to_pascal(entity).lower()}
+  explicit_module = endpoint.get("module") or endpoint.get("moduleName")
+  explicit_entity = endpoint.get("entity") or endpoint.get("entityName")
+  if explicit_module is not None:
+    if str(explicit_module).lower() not in module_tokens:
+      return False
+    if explicit_entity is not None:
+      return str(explicit_entity).lower() in entity_tokens
+  if explicit_entity is not None:
+    return str(explicit_entity).lower() in entity_tokens
+  values = [
+    str(endpoint.get(key) or "")
+    for key in ("id", "name", "path", "request", "requestName", "response", "responseName")
+  ]
+  entity_snake = to_snake(entity)
+  entity_kebab = to_kebab(entity)
+  for value in values:
+    normalized = to_snake(value)
+    words = set(re.split(r"[^a-z0-9]+", normalized))
+    if entity_snake in words:
+      return True
+    path_words = set(re.split(r"[^a-z0-9-]+", value.lower()))
+    if entity_kebab in path_words or f"{entity_kebab}s" in path_words:
+      return True
+    if entity_kebab.endswith("y") and f"{entity_kebab[:-1]}ies" in path_words:
+      return True
+  return False
 
-  module = codegen.get("module") or primary_module.get("name") or "App"
-  entity = codegen.get("entity") or primary_entity.get("name") or "Entity"
+
+def _plural_route(entity_kebab: str) -> str:
+  if entity_kebab.endswith("y") and not entity_kebab.endswith(("ay", "ey", "iy", "oy", "uy")):
+    return f"{entity_kebab[:-1]}ies"
+  if entity_kebab.endswith(("s", "x", "z", "ch", "sh")):
+    return f"{entity_kebab}es"
+  return f"{entity_kebab}s"
+
+
+def _selector_key(value: object) -> str:
+  return to_snake(str(value))
+
+
+def _entity_sources(spec: dict) -> list[tuple[dict, dict]]:
+  codegen = spec.get("codegen") or {}
+  discovered: list[tuple[dict, dict]] = []
+  for module in spec.get("modules") or []:
+    if not isinstance(module, dict):
+      continue
+    for entity in module.get("entities") or []:
+      if isinstance(entity, dict):
+        discovered.append((module, entity))
+  if not discovered:
+    flat = [entity for entity in (spec.get("entities") or []) if isinstance(entity, dict)]
+    default_module = {"name": codegen.get("module") or "App"}
+    discovered = [(default_module, entity) for entity in flat]
+  if not discovered:
+    return [({"name": codegen.get("module") or "App"}, {"name": codegen.get("entity") or "Entity"})]
+
+  module_selector = codegen.get("module")
+  entity_selector = codegen.get("entity")
+  selected = discovered
+  if module_selector is not None:
+    wanted = _selector_key(module_selector)
+    selected = [(m, e) for m, e in selected if _selector_key(m.get("name") or "") == wanted]
+  if entity_selector is not None:
+    wanted = _selector_key(entity_selector)
+    selected = [(m, e) for m, e in selected if _selector_key(e.get("name") or "") == wanted]
+  if not selected:
+    available = ", ".join(
+      f"{module.get('name')}.{entity.get('name')}" for module, entity in discovered
+    )
+    requested = ".".join(
+      str(part) for part in (module_selector, entity_selector) if part is not None
+    )
+    raise ValueError(
+      f"codegen selector {requested!r} matches no module/entity; available: {available}"
+    )
+  return selected
+
+
+def resolve_codegen_context(
+  spec: dict,
+  module_data: dict | None = None,
+  entity_data: dict | None = None,
+  *,
+  multi_entity: bool = False,
+) -> dict:
+  codegen = spec.get("codegen") or {}
+  primary_module = module_data or {"name": codegen.get("module") or "App"}
+  primary_entity = entity_data or {"name": codegen.get("entity") or "Entity"}
+
+  module = primary_module.get("name") or codegen.get("module") or "App"
+  entity = primary_entity.get("name") or codegen.get("entity") or "Entity"
   profile = codegen.get("profile") or "crud-standard"
 
   module_kebab = to_kebab(module)
@@ -71,9 +157,25 @@ def resolve_codegen_context(spec: dict) -> dict:
   entity_snake = python_identifier(entity, "entity")
   entity_pascal = to_pascal(entity)
   module_pascal = to_pascal(module)
-  wire = resolve_wire(spec)
-
-  endpoints = spec.get("api", {}).get("endpoints") or []
+  all_endpoints = spec.get("api", {}).get("endpoints") or []
+  warnings: list[str] = []
+  if multi_entity:
+    endpoints = [e for e in all_endpoints if isinstance(e, dict) and _matches_endpoint(e, module, entity)]
+    if not endpoints:
+      warnings.append(
+        f"No unambiguous endpoints for {module}.{entity}; using generated CRUD defaults"
+      )
+      default_path = f"/{_plural_route(entity_kebab)}"
+      endpoints = [
+        {"action": "list", "method": "GET", "path": default_path},
+        {"action": "create", "method": "POST", "path": default_path},
+        {"action": "update", "method": "PATCH", "path": f"{default_path}/{{id}}"},
+        {"action": "delete", "method": "DELETE", "path": f"{default_path}/{{id}}"},
+      ]
+  else:
+    endpoints = [e for e in all_endpoints if isinstance(e, dict)]
+  entity_spec = {**spec, "api": {**(spec.get("api") or {}), "endpoints": endpoints}}
+  wire = resolve_wire(entity_spec)
   search_ep = next(
     (e for e in endpoints if e.get("action") in ("search", "list")),
     endpoints[0] if endpoints else None,
@@ -119,41 +221,65 @@ def resolve_codegen_context(spec: dict) -> dict:
     "field_names": [field["name"] for field in field_defs],
     "field_defs": field_defs,
     "endpoints": endpoints,
+    "warnings": warnings,
     "spec": spec,
   }
 
 
 def build_file_plan(spec: dict, *, force: bool = False) -> dict:
   root = repo_root()
-  ctx = resolve_codegen_context(spec)
   registry = load_registry(root)
-  base = f"src/app/modules/{ctx['module_package']}/{ctx['entity_snake']}"
   files: list[dict] = []
-  skipped: list[dict] = []
+  contexts: list[dict] = []
+  sources = _entity_sources(spec)
+  multi_entity = len(sources) > 1
 
-  def add(file_id: str, relative_path: str, template: str, layer: str) -> None:
-    abs_path = root / relative_path
-    if abs_path.exists() and not force:
-      skipped.append({"id": file_id, "relativePath": relative_path, "reason": "exists"})
-      return
-    files.append({"id": file_id, "relativePath": relative_path, "template": template, "layer": layer})
+  def add(ctx: dict, file_id: str, relative_path: str, template: str, layer: str) -> None:
+    files.append({
+      "id": file_id,
+      "relativePath": relative_path,
+      "template": template,
+      "layer": layer,
+      "entity": ctx["entity"],
+      "module": ctx["module"],
+      "ctx": ctx,
+    })
 
-  add("router", f"{base}/router.py", "router.py.j2", "router")
-  add("schemas_request", f"{base}/schemas/request.py", "schemas_request.py.j2", "schemas")
-  add("schemas_response", f"{base}/schemas/response.py", "schemas_response.py.j2", "schemas")
-  add("presenter", f"{base}/presenters/{ctx['entity_snake']}_presenter.py", "presenter.py.j2", "presenter")
-  if any(ctx["wire"].get(action) for action in ("search", "create", "update", "delete")):
-    add("store", f"{base}/services/store.py", "store.py.j2", "service")
+  for module_data, entity_data in sources:
+    ctx = resolve_codegen_context(
+      spec, module_data, entity_data, multi_entity=multi_entity
+    )
+    contexts.append(ctx)
+    base = f"src/app/modules/{ctx['module_package']}/{ctx['entity_snake']}"
+    add(ctx, "router", f"{base}/router.py", "router.py.j2", "router")
+    add(ctx, "schemas_request", f"{base}/schemas/request.py", "schemas_request.py.j2", "schemas")
+    add(ctx, "schemas_response", f"{base}/schemas/response.py", "schemas_response.py.j2", "schemas")
+    add(ctx, "presenter", f"{base}/presenters/{ctx['entity_snake']}_presenter.py", "presenter.py.j2", "presenter")
+    if any(ctx["wire"].get(action) for action in ("search", "create", "update", "delete")):
+      add(ctx, "store", f"{base}/services/store.py", "store.py.j2", "service")
+    for action in ("search", "create", "update", "delete"):
+      if ctx["wire"].get(action):
+        add(ctx, f"service_{action}", f"{base}/services/{action}_service.py", f"service_{action}.py.j2", "service")
+    add(ctx, "test_router", f"tests/test_{ctx['entity_snake']}_router.py", "test_router.py.j2", "test")
 
-  if ctx["wire"].get("search"):
-    add("service_search", f"{base}/services/search_service.py", "service_search.py.j2", "service")
-  if ctx["wire"].get("create"):
-    add("service_create", f"{base}/services/create_service.py", "service_create.py.j2", "service")
-  if ctx["wire"].get("update"):
-    add("service_update", f"{base}/services/update_service.py", "service_update.py.j2", "service")
-  if ctx["wire"].get("delete"):
-    add("service_delete", f"{base}/services/delete_service.py", "service_delete.py.j2", "service")
-
-  add("test_router", f"tests/test_{ctx['entity_snake']}_router.py", "test_router.py.j2", "test")
-
-  return {"ctx": ctx, "files": files, "skipped": skipped, "registry": registry}
+  paths = [file["relativePath"] for file in files]
+  duplicates = sorted({item for item in paths if paths.count(item) > 1})
+  for file in files:
+    if file["relativePath"] in duplicates and file["layer"] == "test":
+      ctx = file["ctx"]
+      file["relativePath"] = (
+        f"tests/test_{ctx['module_package']}_{ctx['entity_snake']}_router.py"
+      )
+  paths = [file["relativePath"] for file in files]
+  duplicates = sorted({item for item in paths if paths.count(item) > 1})
+  if duplicates:
+    raise ValueError(f"Duplicate generated output paths: {', '.join(duplicates)}")
+  return {
+    "ctx": contexts[0],
+    "contexts": contexts,
+    "files": files,
+    "registry": registry,
+    "force": force,
+    "root": root,
+    "warnings": [warning for ctx in contexts for warning in ctx["warnings"]],
+  }

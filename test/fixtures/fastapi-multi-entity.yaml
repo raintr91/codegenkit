@@ -1,0 +1,42 @@
+id: inventory-catalog
+codegen:
+  profile: crud-standard
+modules:
+  - name: Catalog Admin
+    entities:
+      - name: Product
+        fields:
+          - name: id
+            type: integer
+          - name: title
+            type: string
+            required: true
+      - name: Category
+        fields:
+          - name: id
+            type: integer
+          - name: label
+            type: string
+            required: true
+api:
+  endpoints:
+    - id: product-list
+      entity: Product
+      action: list
+      method: GET
+      path: /api/products
+    - id: product-create
+      entity: Product
+      action: create
+      method: POST
+      path: /api/products
+    - id: category-list
+      requestName: CategorySearchRequest
+      action: list
+      method: GET
+      path: /api/categories
+    - id: category-update
+      responseName: CategoryResponse
+      action: update
+      method: PATCH
+      path: /api/categories/{id}

@@ -4,7 +4,9 @@ import {
   mkdirSync,
   readFileSync,
   existsSync,
+  copyFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import os from 'node:os'
@@ -37,6 +39,28 @@ import {
   preferGenSpec as preferNextGenSpec,
   resolveHubId as resolveNextHubId,
 } from '../adapters/nextjs/codegen/runners/lib/resolve-hub-id.mjs'
+
+function fastApiFixture() {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-fastapi-runtime-'))
+  mkdirSync(path.join(root, 'registries'))
+  copyFileSync(
+    'adapters/fastapi/registries/codegen.registry.json',
+    path.join(root, 'registries', 'codegen.registry.json'),
+  )
+  const spec = path.join(root, 'spec.yaml')
+  copyFileSync('test/fixtures/fastapi-multi-entity.yaml', spec)
+  return { root, spec }
+}
+
+function runFastApi(root, spec, { kind = 'codegen', dryRun = false, force = false } = {}) {
+  return runBeEngine({
+    adapter: 'fastapi',
+    projectRoot: root,
+    kind,
+    argv: ['--spec', spec, ...(force ? ['--force'] : [])],
+    dryRun,
+  })
+}
 
 const OPTIONAL_SCHEMA_REL =
   '.cursor/schemas/codegenkit/missing-optional-event.schema.json'
@@ -600,11 +624,206 @@ test('FastAPI adapter ships unit generator and rejects invalid Python identifier
   )
 })
 
+test('FastAPI multi-entity dry-run reports the full batch and writes nothing', () => {
+  const { root, spec } = fastApiFixture()
+  const result = runFastApi(root, spec, { dryRun: true })
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /fast-gen: entities=2/)
+  assert.match(result.stdout, /catalog_admin\/product\/router\.py/)
+  assert.match(result.stdout, /catalog_admin\/category\/router\.py/)
+  assert.match(result.stdout, /would-write/)
+  assert.equal(existsSync(path.join(root, 'src')), false)
+  assert.equal(existsSync(path.join(root, 'generated')), false)
+})
+
+test('FastAPI multi-entity write records schema-v2 ownership hashes', () => {
+  const { root, spec } = fastApiFixture()
+  const result = runFastApi(root, spec)
+  assert.equal(result.status, 0, result.stderr)
+  assert.ok(existsSync(path.join(root, 'src/app/modules/catalog_admin/product/router.py')))
+  assert.ok(existsSync(path.join(root, 'src/app/modules/catalog_admin/category/router.py')))
+  const routerIndex = readFileSync(path.join(root, 'src/app/generated_routers.py'), 'utf8')
+  assert.match(routerIndex, /app\.modules\.catalog_admin\.product/)
+  assert.match(routerIndex, /app\.modules\.catalog_admin\.category/)
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, 'generated/codegen.manifest.json'), 'utf8'),
+  )
+  assert.equal(manifest.schemaVersion, 2)
+  assert.equal(manifest.packageVersion, '0.3.4')
+  assert.equal(manifest.generator, 'fastapi-codegen')
+  assert.equal(manifest.entities.length, 2)
+  assert.ok(manifest.files['src/app/generated_routers.py'])
+  for (const metadata of Object.values(manifest.files)) {
+    assert.match(metadata.sha256, /^[a-f0-9]{64}$/)
+    assert.ok(metadata.template)
+    assert.ok(metadata.layer)
+  }
+})
+
+test('FastAPI unchanged rerun preserves files and reports unchanged', () => {
+  const { root, spec } = fastApiFixture()
+  assert.equal(runFastApi(root, spec).status, 0)
+  const target = path.join(root, 'src/app/modules/catalog_admin/product/router.py')
+  const before = readFileSync(target, 'utf8')
+  const result = runFastApi(root, spec)
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /unchanged: src\/app\/modules\/catalog_admin\/product\/router\.py/)
+  assert.equal(readFileSync(target, 'utf8'), before)
+})
+
+test('FastAPI local modification conflicts, stays intact, and force overwrites', () => {
+  const { root, spec } = fastApiFixture()
+  assert.equal(runFastApi(root, spec).status, 0)
+  const target = path.join(root, 'src/app/modules/catalog_admin/product/router.py')
+  writeFileSync(target, '# local customization\n')
+  const blocked = runFastApi(root, spec)
+  assert.notEqual(blocked.status, 0)
+  assert.match(blocked.stderr, /locally modified conflicts/)
+  assert.equal(readFileSync(target, 'utf8'), '# local customization\n')
+  const forced = runFastApi(root, spec, { force: true })
+  assert.equal(forced.status, 0, forced.stderr)
+  assert.match(forced.stdout, /force: src\/app\/modules\/catalog_admin\/product\/router\.py/)
+  assert.doesNotMatch(readFileSync(target, 'utf8'), /local customization/)
+})
+
+test('FastAPI unmanaged existing file blocks the entire write batch', () => {
+  const { root, spec } = fastApiFixture()
+  const target = path.join(root, 'src/app/modules/catalog_admin/product/router.py')
+  mkdirSync(path.dirname(target), { recursive: true })
+  writeFileSync(target, '# unmanaged\n')
+  const result = runFastApi(root, spec)
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /unmanaged/)
+  assert.equal(readFileSync(target, 'utf8'), '# unmanaged\n')
+  assert.equal(
+    existsSync(path.join(root, 'src/app/modules/catalog_admin/category/router.py')),
+    false,
+  )
+  assert.equal(existsSync(path.join(root, 'generated/codegen.manifest.json')), false)
+})
+
+test('FastAPI rejects traversal identifiers and symlink ancestors before writes', () => {
+  const traversal = fastApiFixture()
+  writeFileSync(
+    traversal.spec,
+    'modules:\n  - name: ../escape\n    entities:\n      - name: Product\n',
+  )
+  const invalid = runFastApi(traversal.root, traversal.spec)
+  assert.notEqual(invalid.status, 0)
+  assert.match(invalid.stderr, /Invalid module for Python identifier/)
+  assert.equal(existsSync(path.join(traversal.root, 'src')), false)
+
+  const linked = fastApiFixture()
+  const outside = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-fastapi-outside-'))
+  mkdirSync(path.join(linked.root, 'src/app'), { recursive: true })
+  symlinkSync(outside, path.join(linked.root, 'src/app/modules'))
+  const rejected = runFastApi(linked.root, linked.spec)
+  assert.notEqual(rejected.status, 0)
+  assert.match(rejected.stderr, /Unsafe symlink/)
+  assert.equal(existsSync(path.join(outside, 'catalog_admin')), false)
+  assert.equal(existsSync(path.join(linked.root, 'generated')), false)
+})
+
+test('FastAPI unitgen manages both entities and blocks modified owned tests', () => {
+  const { root, spec } = fastApiFixture()
+  const written = runFastApi(root, spec, { kind: 'unitgen' })
+  assert.equal(written.status, 0, written.stderr)
+  const product = path.join(root, 'tests/unit/test_product_service.py')
+  const category = path.join(root, 'tests/unit/test_category_service.py')
+  assert.ok(existsSync(product))
+  assert.ok(existsSync(category))
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, 'generated/unit.manifest.json'), 'utf8'),
+  )
+  assert.equal(manifest.schemaVersion, 2)
+  assert.equal(manifest.entities.length, 2)
+  assert.match(manifest.files['tests/unit/test_product_service.py'].sha256, /^[a-f0-9]{64}$/)
+  writeFileSync(product, '# modified unit\n')
+  const blocked = runFastApi(root, spec, { kind: 'unitgen' })
+  assert.notEqual(blocked.status, 0)
+  assert.equal(readFileSync(product, 'utf8'), '# modified unit\n')
+  assert.equal(runFastApi(root, spec, { kind: 'unitgen', force: true }).status, 0)
+  assert.doesNotMatch(readFileSync(product, 'utf8'), /modified unit/)
+})
+
+test('FastAPI codegen.entity selector generates only the matching entity', () => {
+  const { root, spec } = fastApiFixture()
+  const original = readFileSync(spec, 'utf8')
+  writeFileSync(
+    spec,
+    original.replace('codegen:\n  profile: crud-standard', 'codegen:\n  profile: crud-standard\n  entity: category'),
+  )
+  const result = runFastApi(root, spec)
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /fast-gen: entities=1/)
+  assert.ok(existsSync(path.join(root, 'src/app/modules/catalog_admin/category/router.py')))
+  assert.equal(
+    existsSync(path.join(root, 'src/app/modules/catalog_admin/product')),
+    false,
+  )
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, 'generated/codegen.manifest.json'), 'utf8'),
+  )
+  assert.equal(manifest.entities.length, 1)
+  assert.equal(manifest.entities[0].entity, 'Category')
+
+  const unit = runFastApi(root, spec, { kind: 'unitgen' })
+  assert.equal(unit.status, 0, unit.stderr)
+  assert.ok(existsSync(path.join(root, 'tests/unit/test_category_service.py')))
+  assert.equal(existsSync(path.join(root, 'tests/unit/test_product_service.py')), false)
+})
+
+test('FastAPI unmatched codegen selector fails with available targets and no writes', () => {
+  const { root, spec } = fastApiFixture()
+  const original = readFileSync(spec, 'utf8')
+  writeFileSync(
+    spec,
+    original.replace('codegen:\n  profile: crud-standard', 'codegen:\n  profile: crud-standard\n  module: Billing\n  entity: Invoice'),
+  )
+  const result = runFastApi(root, spec)
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /matches no module\/entity/)
+  assert.match(result.stderr, /Catalog Admin\.Product/)
+  assert.match(result.stderr, /Catalog Admin\.Category/)
+  assert.equal(existsSync(path.join(root, 'src')), false)
+  assert.equal(existsSync(path.join(root, 'generated')), false)
+})
+
+test('FastAPI ambiguous multi-entity endpoints warn and use isolated CRUD routes', () => {
+  const { root, spec } = fastApiFixture()
+  writeFileSync(
+    spec,
+    `modules:
+  - name: Commerce
+    entities:
+      - name: Product
+      - name: Category
+api:
+  endpoints:
+    - action: create
+      method: POST
+      path: /api/session
+`,
+  )
+  const result = runFastApi(root, spec)
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stderr, /No unambiguous endpoints for Commerce\.Product/)
+  assert.match(result.stderr, /No unambiguous endpoints for Commerce\.Category/)
+  assert.match(
+    readFileSync(path.join(root, 'src/app/modules/commerce/product/router.py'), 'utf8'),
+    /prefix="\/products"/,
+  )
+  assert.match(
+    readFileSync(path.join(root, 'src/app/modules/commerce/category/router.py'), 'utf8'),
+    /prefix="\/categories"/,
+  )
+})
+
 test('installers pin the released tag and enforce lockfiles', () => {
   const shell = readFileSync('install.sh', 'utf8')
   const powershell = readFileSync('install.ps1', 'utf8')
   for (const script of [shell, powershell]) {
-    assert.match(script, /v0\.3\.3/)
+    assert.match(script, /v0\.3\.4/)
     assert.match(script, /pnpm install --frozen-lockfile/)
     assert.match(script, /npm ci/)
     assert.doesNotMatch(script, /(?:REF:-main|Ref = "main")/)

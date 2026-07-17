@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@platform/codegenkit",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "types": ["fe", "be", "fullstack"],
   "requires": [],
   "optional": ["@platform/artifactgraph", "codegraph"],
