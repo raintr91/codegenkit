@@ -25,6 +25,7 @@ import { mergePlatformRepos } from '../dist/install/platform-repos.js'
 import {
   resolveAdapter,
   resolveBeAdapter,
+  resolveFeAdapter,
   resolveType,
 } from '../dist/config/project-root.js'
 import { installCursorMcp } from '../dist/install/cursor-mcp.js'
@@ -70,10 +71,161 @@ const OPTIONAL_RULE_REL =
 test('adapters resolve', () => {
   assert.equal(resolveAdapter('nuxt4'), 'nuxt4')
   assert.equal(resolveAdapter('nextjs'), 'nextjs')
+  assert.equal(resolveAdapter('dotnet-line'), 'dotnet-line')
   assert.throws(() => resolveAdapter('nestjs'))
   assert.equal(resolveBeAdapter('fastapi'), 'fastapi')
   assert.equal(resolveBeAdapter('laravel'), 'laravel')
+  assert.equal(resolveBeAdapter('dotnet-integration'), 'dotnet-integration')
+  assert.throws(() => resolveFeAdapter('dotnet-integration'), /dotnet-line/)
+  assert.throws(() => resolveBeAdapter('dotnet-line'), /dotnet-integration/)
   assert.equal(resolveType('fullstack'), 'fullstack')
+})
+
+test('dotnet adapter init syncs lane registries and records profiles', () => {
+  const cases = [
+    {
+      type: 'fe',
+      feAdapter: 'dotnet-line',
+      registry: 'dotnet-line.codegen.registry.json',
+      profile: 'fe',
+    },
+    {
+      type: 'be',
+      beAdapter: 'dotnet-integration',
+      registry: 'dotnet-integration.codegen.registry.json',
+      profile: 'be',
+    },
+  ]
+  for (const options of cases) {
+    const root = mkdtempSync(path.join(os.tmpdir(), `codegenkit-${options.type}-dotnet-init-`))
+    const adapter = options.feAdapter ?? options.beAdapter
+    const result = spawnSync(
+      process.execPath,
+      [
+        'bin/codegenkit.mjs',
+        'init',
+        `--type=${options.type}`,
+        `--adapter=${adapter}`,
+        '--project-root',
+        root,
+        '--yes',
+      ],
+      { cwd: path.resolve('.'), encoding: 'utf8' },
+    )
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(existsSync(path.join(root, 'registries', options.registry)))
+    const platform = JSON.parse(readFileSync(path.join(root, 'platform-repos.json'), 'utf8'))
+    assert.equal(
+      platform.harness.profiles[options.profile].adapter,
+      adapter,
+    )
+  }
+})
+
+test('dotnet adapter switch marks the previous registry stale', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-dotnet-switch-'))
+  const oldRegistry = path.join(root, 'registries', 'dotnet-line.codegen.registry.json')
+  installHarness({ projectRoot: root, type: 'fe', feAdapter: 'dotnet-line' })
+  const switched = installHarness({ projectRoot: root, type: 'fe', feAdapter: 'nextjs' })
+  assert.ok(switched.stale.includes(oldRegistry))
+  assert.ok(harnessStatus(root).stale.includes(oldRegistry))
+})
+
+test('dotnet adapters dry-run without writing generated outputs', async (t) => {
+  const dotnet = spawnSync(process.env.CODEGENKIT_DOTNET || 'dotnet', ['--version'], {
+    encoding: 'utf8',
+  })
+  if (dotnet.status !== 0) {
+    t.skip('dotnet SDK unavailable')
+    return
+  }
+  const nugetPackages =
+    process.env.NUGET_PACKAGES ?? path.join(os.homedir(), '.nuget', 'packages')
+  if (
+    !existsSync(path.join(nugetPackages, 'scriban', '7.2.5')) ||
+    !existsSync(path.join(nugetPackages, 'yamldotnet', '16.3.0'))
+  ) {
+    t.skip('vendored engine NuGet packages are not cached; network restore is not used in tests')
+    return
+  }
+  const cases = [
+    {
+      adapter: 'dotnet-line',
+      fixture: 'dotnet-line-spec.yaml',
+      run(root, spec) {
+        return runAdapterEngine({
+          adapter: this.adapter,
+          kind: 'codegen',
+          script: 'generate.mjs',
+          projectRoot: root,
+          argv: ['--spec', spec],
+          dryRun: true,
+        })
+      },
+    },
+    {
+      adapter: 'dotnet-integration',
+      fixture: 'dotnet-integration-spec.yaml',
+      run(root, spec) {
+        return runBeEngine({
+          adapter: this.adapter,
+          projectRoot: root,
+          argv: ['--spec', spec],
+          dryRun: true,
+        })
+      },
+    },
+  ]
+  for (const item of cases) {
+    const root = mkdtempSync(path.join(os.tmpdir(), `codegenkit-${item.adapter}-dry-`))
+    const spec = path.join(root, 'ir', 'spec.yaml')
+    mkdirSync(path.dirname(spec), { recursive: true })
+    copyFileSync(path.join('test', 'fixtures', item.fixture), spec)
+    installHarness({
+      projectRoot: root,
+      type: item.adapter === 'dotnet-line' ? 'fe' : 'be',
+      ...(item.adapter === 'dotnet-line'
+        ? { feAdapter: item.adapter }
+        : { beAdapter: item.adapter }),
+    })
+    const before = new Set([spec, ...Object.keys(JSON.parse(readFileSync(
+      path.join(root, '.codegenkit', 'install-manifest.json'),
+      'utf8',
+    )).files).map((relative) => path.join(root, relative))])
+    const result = item.run(root, spec)
+    assert.equal(result.status, 0, `${item.adapter}: ${result.stderr}`)
+    assert.match(result.stdout, /\[dry\]:/)
+    assert.equal(existsSync(path.join(root, 'src')), false)
+    assert.equal(existsSync(path.join(root, 'tests')), false)
+    assert.equal(existsSync(path.join(root, 'ir', 'generated')), false)
+    assert.ok(before.has(spec))
+  }
+})
+
+test('dotnet adapters report missing runtime and bundled unit limitation', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-dotnet-errors-'))
+  const previous = process.env.CODEGENKIT_DOTNET
+  process.env.CODEGENKIT_DOTNET = path.join(root, 'missing-dotnet')
+  try {
+    const missing = runBeEngine({
+      adapter: 'dotnet-integration',
+      projectRoot: root,
+      dryRun: true,
+    })
+    assert.equal(missing.status, 1)
+    assert.match(missing.stderr, /No \.NET runtime found/)
+  } finally {
+    if (previous === undefined) delete process.env.CODEGENKIT_DOTNET
+    else process.env.CODEGENKIT_DOTNET = previous
+  }
+  const unit = runAdapterEngine({
+    adapter: 'dotnet-line',
+    kind: 'unitgen',
+    script: 'generate.mjs',
+    projectRoot: root,
+  })
+  assert.equal(unit.status, 1)
+  assert.match(unit.stderr, /bundles test outputs/)
 })
 
 test('Nuxt and Next ID resolution require ir/spec.yaml', () => {
@@ -301,6 +453,10 @@ test('fullstack init syncs FE and BE subsets explicitly', () => {
   const platform = JSON.parse(readFileSync(maps.path, 'utf8'))
   assert.equal(platform.harness.profiles.fe.adapter, 'nextjs')
   assert.equal(platform.harness.profiles.be.adapter, 'fastapi')
+  const registry = JSON.parse(
+    readFileSync(path.join(root, 'registries', 'codegen.registry.json'), 'utf8'),
+  )
+  assert.match(registry.description, /FastAPI/)
 })
 
 test('optional integration contract is installed for every profile', () => {
@@ -649,7 +805,7 @@ test('FastAPI multi-entity write records schema-v2 ownership hashes', () => {
     readFileSync(path.join(root, 'generated/codegen.manifest.json'), 'utf8'),
   )
   assert.equal(manifest.schemaVersion, 2)
-  assert.equal(manifest.packageVersion, '0.3.4')
+  assert.equal(manifest.packageVersion, '0.4.0')
   assert.equal(manifest.generator, 'fastapi-codegen')
   assert.equal(manifest.entities.length, 2)
   assert.ok(manifest.files['src/app/generated_routers.py'])
@@ -823,7 +979,7 @@ test('installers pin the released tag and enforce lockfiles', () => {
   const shell = readFileSync('install.sh', 'utf8')
   const powershell = readFileSync('install.ps1', 'utf8')
   for (const script of [shell, powershell]) {
-    assert.match(script, /v0\.3\.4/)
+    assert.match(script, /v0\.4\.0/)
     assert.match(script, /pnpm install --frozen-lockfile/)
     assert.match(script, /npm ci/)
     assert.doesNotMatch(script, /(?:REF:-main|Ref = "main")/)

@@ -1,0 +1,15 @@
+# Integration gen — HANDOFF
+
+Spec: `{{ spec_path }}`
+
+Entity: **{{ entity_pascal }}** · module: **{{ module_pascal }}** · API: `{{ api_method }} {{ api_path }}`
+
+## Generated files
+
+{{ for f in files }}- `{{ f }}`
+{{ end }}
+
+## Manual follow-up
+
+- Register DI in `WebAppFactory` / `Program`
+- Validate the pilot-specific `mes-downtime` integration behavior

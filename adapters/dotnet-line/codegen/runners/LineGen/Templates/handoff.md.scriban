@@ -1,0 +1,15 @@
+# Line gen — HANDOFF
+
+Spec: `{{ spec_path }}`
+
+Screen: **{{ screen_pascal }}** · profile: **{{ profile }}** · API: `{{ api_method }} /{{ api_path }}`
+
+## Generated files
+
+{{ for f in files }}- `{{ f }}`
+{{ end }}
+
+## Manual follow-up
+
+- Wire DI in `CheckInKioskHost` or the WinForms shell
+- Validate the pilot-specific `kiosk-check-in` API envelope

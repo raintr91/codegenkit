@@ -1,0 +1,13 @@
+codegen:
+  profile: kiosk-check-in
+  entity: check-in
+clients:
+  line:
+    profile: kiosk-check-in
+    screens:
+      - id: check-in-kiosk
+    api:
+      endpoints:
+        checkIn:
+          method: POST
+          path: /workforce/check-in

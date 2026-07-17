@@ -116,11 +116,19 @@ function managedSources(
       targetPrefix: '.cursor',
     })),
   ]
-  if (selectedProfiles.includes('be') && adapters.be) {
-    sources.push({
-      root: path.join(packageRoot(), 'adapters', adapters.be, 'registries'),
-      targetPrefix: 'registries',
-    })
+  for (const adapter of [
+    ...(selectedProfiles.includes('fe') && adapters.fe === 'dotnet-line'
+      ? [adapters.fe]
+      : []),
+    ...(selectedProfiles.includes('be') && adapters.be ? [adapters.be] : []),
+  ]) {
+    const registryRoot = path.join(packageRoot(), 'adapters', adapter, 'registries')
+    if (existsSync(registryRoot)) {
+      sources.push({
+        root: registryRoot,
+        targetPrefix: 'registries',
+      })
+    }
   }
   return sources
 }

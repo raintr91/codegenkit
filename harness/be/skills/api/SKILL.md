@@ -7,7 +7,7 @@ disable-model-invocation: true
 # /api — Backend API
 
 **Owner:** Codegenkit (`--type=be`)  
-**Adapters:** `fastapi` · `laravel`
+**Adapters:** `fastapi` · `laravel` · `dotnet-integration`
 
 ## Generate
 
@@ -23,6 +23,10 @@ codegenkit api-gen --adapter=laravel -- --spec /path/to/ir/spec.yaml
 codegenkit api-unit-gen:dry --adapter=laravel -- --spec /path/to/ir/spec.yaml
 codegenkit api-registry --adapter=laravel
 codegenkit api-unit-registry --adapter=laravel
+
+codegenkit api-gen:dry --adapter=dotnet-integration -- --spec ir/spec.yaml
+codegenkit api-gen --adapter=dotnet-integration -- --spec ir/spec.yaml
+codegenkit api-registry --adapter=dotnet-integration
 ```
 
 The selected backend repository is the only write target. Never infer a sibling
@@ -30,6 +34,10 @@ docs hub or frontend checkout.
 
 Laravel supports the detected `modules-v1` profile only. FastAPI requires an
 explicit Python runtime or target virtual environment.
+
+`dotnet-integration` requires the .NET 8 SDK (`CODEGENKIT_DOTNET`, then
+`dotnet`) and supports the pilot-specific `mes-downtime` profile. Its API pass
+already emits test source; it has no separate API unit-generation engine.
 
 FastAPI generates all nested module entities, with flat `entities` and legacy
 `codegen.entity` compatibility. Code and unit manifests retain SHA-256

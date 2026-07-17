@@ -5,6 +5,8 @@ codegenkit init --type=fe --adapter=nuxt4 --target=cursor --docs-root=/path/to/d
 codegenkit init --type=fe --adapter=nextjs --yes
 codegenkit init --type=be --adapter=fastapi --yes
 codegenkit init --type=be --adapter=laravel --yes
+codegenkit init --type=fe --adapter=dotnet-line --yes
+codegenkit init --type=be --adapter=dotnet-integration --yes
 codegenkit init --type=fullstack --fe-adapter=nuxt4 --be-adapter=fastapi --yes
 ```
 
@@ -12,8 +14,9 @@ Supported profiles are `fe`, `be`, and explicit `fullstack`. Docs/tests
 profiles must not install Codegenkit.
 
 `init` writes machine-local `.cursor/mcp.json`, syncs only selected lane skills,
-merges owned skill IDs into `platform-repos.json`, and installs the selected BE
-adapter's managed registry defaults under `registries/`. Existing user-modified
+merges owned skill IDs into `platform-repos.json`, and installs the selected
+adapter's managed registry defaults under `registries/` (including the
+`dotnet-line` FE registry). Existing user-modified
 registries are reported as conflicts unless `--force` is explicit.
 
 ## Managed lifecycle
@@ -22,7 +25,13 @@ The install manifest at `.codegenkit/install-manifest.json` records every
 managed target, its installed hash, selected profile, and adapters. On a later
 `init`, targets no longer supplied by that profile/adapter are retained in the
 manifest with `stale: true`; they are not silently deleted. This includes
-adapter-owned BE registry defaults.
+adapter-owned registry defaults.
+
+The `dotnet-line` and `dotnet-integration` adapters require the .NET 8 SDK and
+resolve it from `CODEGENKIT_DOTNET`, then `dotnet`. Their pilot profiles are
+`kiosk-check-in` and `mes-downtime`; they do not claim generic .NET support.
+Their primary generation pass bundles generated test source, so they have no
+separate unit-generation engine.
 
 ```bash
 codegenkit status                         # JSON health and compatibility report

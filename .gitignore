@@ -5,6 +5,8 @@ __pycache__/
 *.py[cod]
 .DS_Store
 *.log
+**/bin/
+**/obj/
 workspace.path
 # Generated — node scripts/platform-workspace-from-repos.mjs --group=<lane>
 platform-*.code-workspace

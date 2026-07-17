@@ -16,6 +16,9 @@ codegenkit unit-registry --adapter=nuxt4
 
 Requires a prior codegen manifest under the docs-hub Code `generated/` folder.
 
+`dotnet-line` is not supported by these separate unit commands: its primary
+`gen` pass already bundles generated test source.
+
 ## Accelerators (optional)
 
 ```text

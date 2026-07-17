@@ -3,7 +3,7 @@ set -euo pipefail
 REPO="${CODEGENKIT_REPO:-raintr91/codegenkit}"
 INSTALL_DIR="${CODEGENKIT_INSTALL_DIR:-$HOME/.codegenkit}"
 BIN_DIR="${CODEGENKIT_BIN_DIR:-$HOME/.local/bin}"
-REF="${CODEGENKIT_REF:-v0.3.4}"
+REF="${CODEGENKIT_REF:-v0.4.0}"
 if [ "${1:-}" = "--uninstall" ]; then
   rm -f "$BIN_DIR/codegenkit" "$BIN_DIR/codegenkit-mcp"
   rm -rf "$INSTALL_DIR"
@@ -32,5 +32,7 @@ ln -sf "$INSTALL_DIR/bin/codegenkit-mcp.mjs" "$BIN_DIR/codegenkit-mcp"
 chmod +x "$INSTALL_DIR/bin/"*.mjs
 echo "Installed Codegenkit. Next:"
 echo "  FE: codegenkit init --type=fe --adapter=nuxt4 --yes"
+echo "  FE .NET 8: codegenkit init --type=fe --adapter=dotnet-line --yes"
 echo "  BE: codegenkit init --type=be --adapter=fastapi --yes"
+echo "  BE .NET 8: codegenkit init --type=be --adapter=dotnet-integration --yes"
 echo "  Fullstack: codegenkit init --type=fullstack --fe-adapter=nuxt4 --be-adapter=fastapi --yes"

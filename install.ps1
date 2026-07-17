@@ -1,11 +1,11 @@
 param(
   [string]$InstallDir = "$HOME\.codegenkit",
-  [string]$Ref = "v0.3.4",
+  [string]$Ref = "v0.4.0",
   [ValidateSet("fe", "be", "fullstack")]
   [string]$Type = "fe",
-  [ValidateSet("nuxt4", "nextjs")]
+  [ValidateSet("nuxt4", "nextjs", "dotnet-line")]
   [string]$FeAdapter = "nuxt4",
-  [ValidateSet("fastapi", "laravel")]
+  [ValidateSet("fastapi", "laravel", "dotnet-integration")]
   [string]$BeAdapter = "fastapi",
   [switch]$Uninstall
 )

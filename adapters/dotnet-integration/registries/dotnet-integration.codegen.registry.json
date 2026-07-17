@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "mes-downtime": {
+      "description": "MES plant downtime adapter",
+      "outputs": ["Endpoint", "Application", "Infrastructure", "Presenter", "Tests"]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+feature:
+  id: mes-downtime
+codegen:
+  profile: mes-downtime
+  module: mes
+  entity: downtime
+api:
+  endpoints:
+    - action: getDowntime
+      method: GET
+      path: /plants/{plant_id}/downtime

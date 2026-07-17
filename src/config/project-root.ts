@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url'
 const pkgRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 export type CodegenType = 'fe' | 'be' | 'fullstack'
-export type FeAdapterId = 'nuxt4' | 'nextjs'
-export type BeAdapterId = 'fastapi' | 'laravel'
+export type FeAdapterId = 'nuxt4' | 'nextjs' | 'dotnet-line'
+export type BeAdapterId = 'fastapi' | 'laravel' | 'dotnet-integration'
 export type AdapterId = FeAdapterId | BeAdapterId
 
 export function packageRoot(): string {
@@ -37,8 +37,8 @@ export function resolveFeAdapter(adapter?: string): FeAdapterId {
     process.env.CODEGENKIT_FE_ADAPTER ??
     process.env.CODEGENKIT_ADAPTER ??
     'nuxt4') as FeAdapterId
-  if (id !== 'nuxt4' && id !== 'nextjs') {
-    throw new Error('--fe-adapter/--adapter must be nuxt4 | nextjs')
+  if (id !== 'nuxt4' && id !== 'nextjs' && id !== 'dotnet-line') {
+    throw new Error('--fe-adapter/--adapter must be nuxt4 | nextjs | dotnet-line')
   }
   const dir = path.join(pkgRoot, 'adapters', id)
   if (!existsSync(dir)) throw new Error(`Adapter missing: ${id}`)
@@ -50,8 +50,8 @@ export function resolveBeAdapter(adapter?: string): BeAdapterId {
     process.env.CODEGENKIT_BE_ADAPTER ??
     process.env.CODEGENKIT_ADAPTER ??
     'fastapi') as BeAdapterId
-  if (id !== 'fastapi' && id !== 'laravel') {
-    throw new Error('--be-adapter/--adapter must be fastapi | laravel')
+  if (id !== 'fastapi' && id !== 'laravel' && id !== 'dotnet-integration') {
+    throw new Error('--be-adapter/--adapter must be fastapi | laravel | dotnet-integration')
   }
   const dir = path.join(pkgRoot, 'adapters', id)
   if (!existsSync(dir)) throw new Error(`Adapter missing: ${id}`)

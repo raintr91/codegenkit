@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "kiosk-check-in": {
+      "description": "Workforce badge check-in screen",
+      "outputs": ["Form", "ViewModel", "Service", "ServiceTests"]
+    }
+  }
+}

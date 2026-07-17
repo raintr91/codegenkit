@@ -15,6 +15,8 @@ one independent multi-lane FE/BE MCP. Do not implement product features here.
   tests, and docs.
 - Keep lane and adapter selection explicit during `init`.
 - Keep generation deterministic and adapter-owned.
+- Keep vendored .NET engines rooted at `CODEGENKIT_ROOT`; resolve
+  `CODEGENKIT_DOTNET` before `dotnet` and never infer sibling repositories.
 - Do not keep `platform-repos.json`, Platform DNA assets, or sibling topology.
 
 ## Workflow
@@ -24,6 +26,10 @@ one independent multi-lane FE/BE MCP. Do not implement product features here.
 3. Keep `init` managed-hash protected and validate adapter compatibility.
 4. Test generated output from clean standalone fixtures.
 5. Run `pnpm test` and `pnpm pack --dry-run` before release.
+
+The `dotnet-line` (`kiosk-check-in`) and `dotnet-integration`
+(`mes-downtime`) Scriban engines are pilot-specific. Their main codegen passes
+bundle generated test source; do not advertise a separate unit engine.
 
 ## Done
 

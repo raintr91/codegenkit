@@ -40,16 +40,17 @@ function passthrough(after: string): string[] {
 function usage(): never {
   console.log(`codegenkit ${packageVersion()}
 
-  init --type=fe --adapter=nuxt4|nextjs [--project-root <path>] [--docs-root <path>] [--force] [--yes]
-  init --type=be --adapter=fastapi|laravel [--project-root <path>] [--force] [--yes]
-  init --type=fullstack --fe-adapter=nuxt4|nextjs --be-adapter=fastapi|laravel …
+  init --type=fe --adapter=nuxt4|nextjs|dotnet-line [--project-root <path>] [--docs-root <path>] [--force] [--yes]
+  init --type=be --adapter=fastapi|laravel|dotnet-integration [--project-root <path>] [--force] [--yes]
+  init --type=fullstack --fe-adapter=nuxt4|nextjs|dotnet-line --be-adapter=fastapi|laravel|dotnet-integration …
   status [--project-root <path>]
   prune [--project-root <path>] [--yes]    # dry-run by default
   gen|gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
   unit-gen|unit-gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
-  api-gen|api-gen:dry [--adapter=fastapi|laravel] [--project-root=…] -- --spec <path>
+  api-gen|api-gen:dry [--adapter=fastapi|laravel|dotnet-integration] [--project-root=…] -- --spec <path>
   api-unit-gen|api-unit-gen:dry [--adapter=fastapi|laravel] [--project-root=…] -- --spec <path>
-  api-registry|api-unit-registry [--adapter=fastapi|laravel] [--project-root=…]
+  api-registry [--adapter=fastapi|laravel|dotnet-integration] [--project-root=…]
+  api-unit-registry [--adapter=fastapi|laravel] [--project-root=…]
   registry|unit-registry [--adapter=…] [--project-root=…]
   common-registry [--project-root=…] [--registry <path>]
   version

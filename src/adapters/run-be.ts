@@ -53,6 +53,48 @@ export function runBeEngine(opts: {
     CODEGENKIT_BE_ADAPTER: opts.adapter,
   }
 
+  if (opts.adapter === 'dotnet-integration') {
+    if (kind === 'unitgen' || kind === 'unit-registry') {
+      return {
+        status: 1,
+        stdout: '',
+        stderr:
+          'dotnet-integration bundles test outputs into api-gen; separate api-unit-gen/api-unit-registry is not supported.\n',
+      }
+    }
+    const command = kind === 'registry' ? 'registry' : opts.dryRun ? 'dry' : 'write'
+    const normalized = argv.filter(
+      (value) => value !== '--dry-run' && value !== '--dry',
+    )
+    if (normalized[0] === 'registry' || normalized[0] === 'dry' || normalized[0] === 'write') {
+      normalized.shift()
+    }
+    const project = path.join(
+      packageRoot(),
+      'adapters',
+      'dotnet-integration',
+      'codegen',
+      'runners',
+      'IntegrationGen',
+      'IntegrationGen.csproj',
+    )
+    const executable = process.env.CODEGENKIT_DOTNET || 'dotnet'
+    const result = spawnSync(
+      executable,
+      ['run', '--project', project, '--', command, ...normalized],
+      { cwd: opts.projectRoot, encoding: 'utf8', env },
+    )
+    if ((result.error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT') {
+      return {
+        status: 1,
+        stdout: '',
+        stderr:
+          'No .NET runtime found; set CODEGENKIT_DOTNET or install dotnet (.NET 8 SDK required).\n',
+      }
+    }
+    return resultOf(result)
+  }
+
   if (opts.adapter === 'fastapi') {
     if (kind === 'registry' || kind === 'unit-registry') {
       const scope = kind === 'registry' ? 'codegen' : 'unitgen'

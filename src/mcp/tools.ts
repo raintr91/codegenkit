@@ -15,7 +15,7 @@ function text(data: unknown) {
 
 function commonShape() {
   return {
-    adapter: z.enum(['nuxt4', 'nextjs']).optional(),
+    adapter: z.enum(['nuxt4', 'nextjs', 'dotnet-line']).optional(),
     projectRoot: z.string().optional(),
     docsRoot: z.string().optional(),
     argv: z.array(z.string()).optional(),
@@ -92,7 +92,7 @@ export function registerTools(server: McpServer): void {
       name,
       description,
       {
-        adapter: z.enum(['fastapi', 'laravel']).optional(),
+        adapter: z.enum(['fastapi', 'laravel', 'dotnet-integration']).optional(),
         projectRoot: z.string().optional(),
         argv: z.array(z.string()).optional(),
       },

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@platform/codegenkit",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "types": ["fe", "be", "fullstack"],
   "requires": [],
   "optional": ["@platform/artifactgraph", "codegraph"],
@@ -25,8 +25,8 @@
     "be": ["api", "grill-api"]
   },
   "adaptersByType": {
-    "fe": ["nuxt4", "nextjs"],
-    "be": ["fastapi", "laravel"]
+    "fe": ["nuxt4", "nextjs", "dotnet-line"],
+    "be": ["fastapi", "laravel", "dotnet-integration"]
   },
   "compatibility": {
     "node": ">=22",
