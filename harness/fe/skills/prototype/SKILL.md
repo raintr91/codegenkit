@@ -33,7 +33,9 @@ Compatibility shims on FE repos may still expose `pnpm portal:gen*`; they must c
 if ArtifactGraph available: recommend/check allowlisted gen command
 else: run codegenkit gen:dry / gen directly
 
-Missing ArtifactGraph never blocks prototype generation.
+Missing ArtifactGraph never blocks prototype generation. Complete the direct,
+deterministic Codegenkit fallback first, then follow
+`.cursor/rules/codegenkit-optional-integrations.mdc` for once-per-run telemetry.
 ```
 
 Docs render / `spec:split` remain docs-hub / Bundlekit handoffs.

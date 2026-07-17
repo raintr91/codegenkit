@@ -1,0 +1,34 @@
+---
+description: Codegenkit-owned fallback and telemetry for optional integrations
+alwaysApply: true
+---
+
+# Codegenkit optional integrations
+
+ArtifactGraph and CodeGraph are optional accelerators. Their absence or
+unavailability must never abort a Codegenkit-owned generation, dry-run,
+validation, or review.
+
+For each optional integration that cannot be used:
+
+1. Continue the owned workflow with its documented deterministic validation or
+   direct adapter fallback. Where judgment is required, use the documented
+   model fallback; where repository evidence is required, use targeted local
+   search and file reads.
+2. Complete the fallback before emitting telemetry. Do not emit an absence
+   event before or instead of the fallback.
+3. Emit exactly one event for each `(runId, optional)` pair, including across
+   retries. Deduplicate repeated discovery or connection failures in the same
+   run.
+4. Validate the event against
+   `.cursor/schemas/codegenkit/missing-optional-event.schema.json`.
+5. Set `event` to `codegenkit.missing-optional`, `package` to
+   `@platform/codegenkit`, and name the unavailable optional as `ArtifactGraph`
+   or `CodeGraph`.
+6. Report the fallback actually completed and the actual failure reason.
+   `metrics.fileReads` is the number of successful fallback file reads and
+   `metrics.contextBytes` is the total UTF-8 bytes those reads added to
+   context. Start both counters at zero, increment from observed operations,
+   and never estimate, predict, or copy planned values.
+
+Use one stable, non-empty `runId` for the entire owned command or agent run.

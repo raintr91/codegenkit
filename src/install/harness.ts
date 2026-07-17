@@ -106,10 +106,16 @@ function managedSources(
   adapters: InstallManifest['adapters'],
 ): Array<{ root: string; targetPrefix: string }> {
   const selectedProfiles = profiles(type)
-  const sources = selectedProfiles.map((profile) => ({
-    root: path.join(packageRoot(), 'harness', profile),
-    targetPrefix: '.cursor',
-  }))
+  const sources = [
+    {
+      root: path.join(packageRoot(), 'harness', 'shared'),
+      targetPrefix: '.cursor',
+    },
+    ...selectedProfiles.map((profile) => ({
+      root: path.join(packageRoot(), 'harness', profile),
+      targetPrefix: '.cursor',
+    })),
+  ]
   if (selectedProfiles.includes('be') && adapters.be) {
     sources.push({
       root: path.join(packageRoot(), 'adapters', adapters.be, 'registries'),

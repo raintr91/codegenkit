@@ -28,6 +28,11 @@ import {
 import { installCursorMcp } from '../dist/install/cursor-mcp.js'
 import { runBeEngine } from '../dist/adapters/run-be.js'
 
+const OPTIONAL_SCHEMA_REL =
+  '.cursor/schemas/codegenkit/missing-optional-event.schema.json'
+const OPTIONAL_RULE_REL =
+  '.cursor/rules/codegenkit-optional-integrations.mdc'
+
 test('adapters resolve', () => {
   assert.equal(resolveAdapter('nuxt4'), 'nuxt4')
   assert.equal(resolveAdapter('nextjs'), 'nextjs')
@@ -133,6 +138,110 @@ test('fullstack init syncs FE and BE subsets explicitly', () => {
   const platform = JSON.parse(readFileSync(maps.path, 'utf8'))
   assert.equal(platform.harness.profiles.fe.adapter, 'nextjs')
   assert.equal(platform.harness.profiles.be.adapter, 'fastapi')
+})
+
+test('optional integration contract is installed for every profile', () => {
+  const installs = [
+    { type: 'fe', feAdapter: 'nuxt4' },
+    { type: 'be', beAdapter: 'laravel' },
+    { type: 'fullstack', feAdapter: 'nextjs', beAdapter: 'fastapi' },
+  ]
+
+  for (const options of installs) {
+    const root = mkdtempSync(
+      path.join(os.tmpdir(), `codegenkit-${options.type}-optional-`),
+    )
+    const result = installHarness({ projectRoot: root, ...options })
+    assert.equal(result.conflicts.length, 0)
+    assert.ok(existsSync(path.join(root, OPTIONAL_SCHEMA_REL)))
+    assert.ok(existsSync(path.join(root, OPTIONAL_RULE_REL)))
+  }
+
+  const schema = JSON.parse(
+    readFileSync(
+      'harness/shared/schemas/codegenkit/missing-optional-event.schema.json',
+      'utf8',
+    ),
+  )
+  assert.equal(schema.properties.event.const, 'codegenkit.missing-optional')
+  assert.equal(schema.properties.package.const, '@platform/codegenkit')
+  assert.deepEqual(schema.properties.optional.enum, ['ArtifactGraph', 'CodeGraph'])
+  assert.deepEqual(schema.required, [
+    'event',
+    'package',
+    'runId',
+    'optional',
+    'reason',
+    'fallback',
+    'metrics',
+  ])
+  assert.deepEqual(schema.properties.metrics.required, [
+    'fileReads',
+    'contextBytes',
+  ])
+  assert.equal(schema.properties.metrics.properties.fileReads.minimum, 0)
+  assert.equal(schema.properties.metrics.properties.contextBytes.minimum, 0)
+})
+
+test('profile switches retain shared optional contract ownership', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-profile-switch-'))
+  const schemaPath = path.join(root, OPTIONAL_SCHEMA_REL)
+  const rulePath = path.join(root, OPTIONAL_RULE_REL)
+
+  installHarness({ projectRoot: root, type: 'fe', feAdapter: 'nuxt4' })
+  const switched = installHarness({
+    projectRoot: root,
+    type: 'be',
+    beAdapter: 'laravel',
+  })
+  assert.equal(switched.stale.includes(schemaPath), false)
+  assert.equal(switched.stale.includes(rulePath), false)
+
+  const status = harnessStatus(root)
+  assert.ok(status.healthy.includes(schemaPath))
+  assert.ok(status.healthy.includes(rulePath))
+  assert.equal(status.stale.includes(schemaPath), false)
+  assert.equal(status.stale.includes(rulePath), false)
+
+  const prune = pruneHarness({ projectRoot: root, yes: true })
+  assert.equal(prune.removed.includes(schemaPath), false)
+  assert.equal(prune.removed.includes(rulePath), false)
+  assert.ok(existsSync(schemaPath))
+  assert.ok(existsSync(rulePath))
+})
+
+test('profile switches preserve modified shared optional contract safely', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-shared-conflict-'))
+  const schemaPath = path.join(root, OPTIONAL_SCHEMA_REL)
+
+  installHarness({ projectRoot: root, type: 'fe', feAdapter: 'nextjs' })
+  const customized = `${readFileSync(schemaPath, 'utf8')}\n`
+  writeFileSync(schemaPath, customized)
+
+  const switched = installHarness({
+    projectRoot: root,
+    type: 'fullstack',
+    feAdapter: 'nextjs',
+    beAdapter: 'fastapi',
+  })
+  assert.ok(switched.conflicts.includes(schemaPath))
+  assert.equal(switched.stale.includes(schemaPath), false)
+  assert.equal(readFileSync(schemaPath, 'utf8'), customized)
+  assert.ok(harnessStatus(root).modified.includes(schemaPath))
+})
+
+test('optional fallback rule requires completion, deduplication, and actual metrics', () => {
+  const rule = readFileSync(
+    'harness/shared/rules/codegenkit-optional-integrations.mdc',
+    'utf8',
+  )
+  assert.match(rule, /must never abort/)
+  assert.match(rule, /Complete the fallback before emitting telemetry/)
+  assert.match(rule, /exactly one event for each `\(runId, optional\)` pair/)
+  assert.match(rule, /including across\s+retries/)
+  assert.match(rule, /number of successful fallback file reads/)
+  assert.match(rule, /total UTF-8 bytes/)
+  assert.match(rule, /never estimate, predict, or copy planned values/)
 })
 
 test('adapter switch marks obsolete BE registry assets stale', () => {

@@ -12,3 +12,7 @@ disable-model-invocation: true
 if ArtifactGraph available: allowlist_check + recommend_command for unitGenDry
 else: codegenkit unit-gen:dry --adapter=… --docs-root=… -- --id …
 ```
+
+Missing ArtifactGraph never blocks the grill. Complete the deterministic dry
+generation fallback first, then follow
+`.cursor/rules/codegenkit-optional-integrations.mdc` for once-per-run telemetry.

@@ -17,3 +17,7 @@ Keep generation through Codegenkit adapters; do not invent sibling docs-hub layo
 if ArtifactGraph available: tags/parity slice for wire readiness
 else: model review from scoped HANDOFF + registry evidence
 ```
+
+Missing ArtifactGraph never blocks wiring. Complete the scoped model fallback
+first, then follow `.cursor/rules/codegenkit-optional-integrations.mdc` for
+once-per-run telemetry with observed metrics only.

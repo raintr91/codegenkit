@@ -22,3 +22,7 @@ Requires a prior codegen manifest under the docs-hub Code `generated/` folder.
 if ArtifactGraph available: recommend/check unit-gen allowlist
 else: run codegenkit unit-gen directly
 ```
+
+Missing ArtifactGraph never blocks unit generation. Complete the direct,
+deterministic Codegenkit fallback first, then follow
+`.cursor/rules/codegenkit-optional-integrations.mdc` for once-per-run telemetry.

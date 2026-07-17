@@ -45,4 +45,7 @@ if CodeGraph available: inspect existing module conventions/callers
 else: targeted repository search and reads
 ```
 
-Missing accelerators never block API generation.
+Missing accelerators never block API generation. Complete each documented
+direct or targeted-local fallback first, then follow
+`.cursor/rules/codegenkit-optional-integrations.mdc` for deduplicated
+once-per-run-and-optional telemetry with observed metrics only.

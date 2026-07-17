@@ -27,4 +27,9 @@ if CodeGraph available: callers/routes/jobs/listeners
 else: targeted repository search
 ```
 
+Missing accelerators never block the grill. Complete each scoped model or
+targeted-local fallback first, then follow
+`.cursor/rules/codegenkit-optional-integrations.mdc` for deduplicated
+once-per-run-and-optional telemetry with observed metrics only.
+
 Handoff verified payloads/errors/permissions to FE `/wire`.

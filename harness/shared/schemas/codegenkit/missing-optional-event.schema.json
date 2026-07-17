@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://platform.local/schemas/codegenkit/missing-optional-event.schema.json",
+  "title": "Codegenkit missing optional dependency event",
+  "description": "Emitted once per Codegenkit run and missing optional dependency, after the owned fallback completes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event",
+    "package",
+    "runId",
+    "optional",
+    "reason",
+    "fallback",
+    "metrics"
+  ],
+  "properties": {
+    "event": {
+      "const": "codegenkit.missing-optional"
+    },
+    "package": {
+      "const": "@platform/codegenkit"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "optional": {
+      "type": "string",
+      "enum": [
+        "ArtifactGraph",
+        "CodeGraph"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fallback": {
+      "type": "string",
+      "minLength": 1
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fileReads",
+        "contextBytes"
+      ],
+      "properties": {
+        "fileReads": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contextBytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
