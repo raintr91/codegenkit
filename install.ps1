@@ -1,6 +1,6 @@
 param(
   [string]$InstallDir = "$HOME\.codegenkit",
-  [string]$Ref = "main",
+  [string]$Ref = "v0.3.2",
   [ValidateSet("fe", "be", "fullstack")]
   [string]$Type = "fe",
   [ValidateSet("nuxt4", "nextjs")]
@@ -27,10 +27,10 @@ Remove-Item $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
 Move-Item $TempDir $InstallDir
 Push-Location $InstallDir
 if (Get-Command pnpm -ErrorAction SilentlyContinue) {
-  pnpm install
+  pnpm install --frozen-lockfile
   pnpm build
 } else {
-  npm install
+  npm ci
   npm run build
 }
 Pop-Location

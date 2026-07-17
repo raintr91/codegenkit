@@ -3,7 +3,7 @@ set -euo pipefail
 REPO="${CODEGENKIT_REPO:-raintr91/codegenkit}"
 INSTALL_DIR="${CODEGENKIT_INSTALL_DIR:-$HOME/.codegenkit}"
 BIN_DIR="${CODEGENKIT_BIN_DIR:-$HOME/.local/bin}"
-REF="${CODEGENKIT_REF:-main}"
+REF="${CODEGENKIT_REF:-v0.3.2}"
 if [ "${1:-}" = "--uninstall" ]; then
   rm -f "$BIN_DIR/codegenkit" "$BIN_DIR/codegenkit-mcp"
   rm -rf "$INSTALL_DIR"
@@ -19,7 +19,13 @@ rm -rf "$INSTALL_DIR"
 mkdir -p "$(dirname "$INSTALL_DIR")"
 mv "$tmpdir/src" "$INSTALL_DIR"
 cd "$INSTALL_DIR"
-if command -v pnpm >/dev/null; then pnpm install && pnpm build; else npm install && npm run build; fi
+if command -v pnpm >/dev/null; then
+  pnpm install --frozen-lockfile
+  pnpm build
+else
+  npm ci
+  npm run build
+fi
 mkdir -p "$BIN_DIR"
 ln -sf "$INSTALL_DIR/bin/codegenkit.mjs" "$BIN_DIR/codegenkit"
 ln -sf "$INSTALL_DIR/bin/codegenkit-mcp.mjs" "$BIN_DIR/codegenkit-mcp"

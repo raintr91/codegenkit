@@ -2,6 +2,10 @@
 
 Independent MCP/harness package for FE and BE code generation.
 
+The installers default to immutable release tag `v0.3.2` and enforce the
+committed lockfile (`pnpm --frozen-lockfile` or `npm ci`). Set
+`CODEGENKIT_REF` / PowerShell `-Ref` only for an explicit alternate release.
+
 Adapters by lane:
 
 - FE: `nuxt4`, `nextjs`
