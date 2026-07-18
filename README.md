@@ -88,3 +88,6 @@ Integration at `c42d567`; they are pilot-specific (`kiosk-check-in` and
 `mes-downtime`), not generic .NET generators. Each main generation pass also
 emits its test source. Separate `unit-gen` / `api-unit-gen` and unit-registry
 commands are intentionally unsupported for these adapters.
+
+
+Layout contract: [`docs/CODEGEN-LAYOUT.md`](docs/CODEGEN-LAYOUT.md).
