@@ -16,7 +16,10 @@ Load docs-hub Code `ir/spec.yaml` via `--id` (for example `W-AD-AUTH-001`):
 product/components/{CMP-…}/code/{W-…}/ir/spec.yaml
 ```
 
-Do not invent sibling docs-hub paths. Pass `CODEGENKIT_DOCS_ROOT` or `--docs-root`.
+Do not invent sibling docs-hub paths. Pass `CODEGENKIT_DOCS_ROOT` or
+`--docs-root`; this is the only bridge to canonical docs IR/registries.
+ArtifactGraph installed in FE is local-only and must not substitute for this
+pointer.
 
 ## Workflow
 
@@ -38,7 +41,7 @@ emits generated test source.
 ## Accelerators (optional)
 
 ```text
-if ArtifactGraph available: recommend/check allowlisted gen command
+if local ArtifactGraph available: recommend/check the FE repo's allowlisted gen command
 else: run codegenkit gen:dry / gen directly
 
 Missing ArtifactGraph never blocks prototype generation. Complete the direct,

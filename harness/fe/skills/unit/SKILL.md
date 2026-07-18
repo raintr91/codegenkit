@@ -15,6 +15,8 @@ codegenkit unit-registry --adapter=nuxt4
 ```
 
 Requires a prior codegen manifest under the docs-hub Code `generated/` folder.
+`--docs-root` / `CODEGENKIT_DOCS_ROOT` is the canonical registry/IR pointer;
+local ArtifactGraph never replaces it.
 
 `dotnet-line` is not supported by these separate unit commands: its primary
 `gen` pass already bundles generated test source.
@@ -22,7 +24,7 @@ Requires a prior codegen manifest under the docs-hub Code `generated/` folder.
 ## Accelerators (optional)
 
 ```text
-if ArtifactGraph available: recommend/check unit-gen allowlist
+if local ArtifactGraph available: recommend/check the FE repo's unit-gen allowlist
 else: run codegenkit unit-gen directly
 ```
 

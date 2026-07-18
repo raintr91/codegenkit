@@ -9,6 +9,18 @@ ArtifactGraph and CodeGraph are optional accelerators. Their absence or
 unavailability must never abort a Codegenkit-owned generation, dry-run,
 validation, or review.
 
+## Docs registry hub
+
+- FE reads canonical IR/registries from the member-selected docs repo through
+  `CODEGENKIT_DOCS_ROOT` (written from `--docs-root` at init). Never infer a
+  sibling checkout.
+- ArtifactGraph in an FE/BE repo indexes that repo only; it does **not** follow
+  `CODEGENKIT_DOCS_ROOT` and must not be used as the bridge to docs.
+- Use ArtifactGraph only for local allowlist/tag hints. Missing local
+  ArtifactGraph never changes where Codegenkit reads canonical docs input.
+- Hubdocs, when installed as a consumer, uses its separate `HUBDOCS_ROOT`
+  pointer for ID/path queries.
+
 For each optional integration that cannot be used:
 
 1. Continue the owned workflow with its documented deterministic validation or

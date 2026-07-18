@@ -20,6 +20,11 @@ writes `platform-repos*.json`; the lane and adapters are recorded in
 `.codegenkit/install-manifest.json`. Existing user-modified
 registries are reported as conflicts unless `--force` is explicit.
 
+For FE, pass `--docs-root=/absolute/path/to/docs-hub`. Init stores the
+member-selected path as `CODEGENKIT_DOCS_ROOT`; this is the canonical bridge to
+docs IR/registries. ArtifactGraph in FE remains local-only and does not replace
+that pointer.
+
 ## Managed lifecycle
 
 The install manifest at `.codegenkit/install-manifest.json` records every

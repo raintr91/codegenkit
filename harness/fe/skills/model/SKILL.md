@@ -22,7 +22,8 @@ docs-hub Code `ir/spec.yaml` (entities + api). **Keep contract keys unchanged.**
 
 ## Workflow
 
-1. Resolve feature via `--id` / `--spec` (same docs-root rules as `/prototype`)
+1. Resolve feature via `--id` / `--spec` through `CODEGENKIT_DOCS_ROOT`
+   (same docs-root rules as `/prototype`; never sibling inference)
 2. Align `models/` + `validations/` with entities/api in the IR
 3. Do not rewrite unrelated UI or API server code here
 
@@ -34,6 +35,9 @@ docs-hub Code `ir/spec.yaml` (entities + api). **Keep contract keys unchanged.**
 ## Accelerators (optional)
 
 ```text
-if ArtifactGraph available: tags/parity for contract marks
+if local ArtifactGraph available: local FE tag/allowlist hints only
 else: scoped IR + registry evidence only
 ```
+
+Canonical IR/registry evidence always comes through the Codegenkit docs pointer,
+not through ArtifactGraph.

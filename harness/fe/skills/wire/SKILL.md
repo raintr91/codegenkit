@@ -9,12 +9,13 @@ disable-model-invocation: true
 **Owner:** Codegenkit (`--type=fe`)
 
 Use after `/prototype` when tags/handoff mark `#wire-only` or real API integration is required.
-Keep generation through Codegenkit adapters; do not invent sibling docs-hub layout.
+Keep generation through Codegenkit adapters; resolve canonical docs evidence
+through `CODEGENKIT_DOCS_ROOT` and do not invent sibling layout.
 
 ## Accelerators (optional)
 
 ```text
-if ArtifactGraph available: tags/parity slice for wire readiness
+if local ArtifactGraph available: local FE tags/allowlist slice for wire readiness
 else: model review from scoped HANDOFF + registry evidence
 ```
 

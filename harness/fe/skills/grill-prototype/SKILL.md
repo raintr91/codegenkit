@@ -6,12 +6,15 @@ disable-model-invocation: true
 
 # /grill-prototype
 
-**Owner:** Codegenkit · optional ArtifactGraph recommend/check before dry-gen.
+**Owner:** Codegenkit · optional local ArtifactGraph allowlist check before dry-gen.
 
 ```text
-if ArtifactGraph available: allowlist_check + recommend_command for genDry
+if local ArtifactGraph available: check the FE repo's allowlist for genDry
 else: codegenkit gen:dry --adapter=… --docs-root=… -- --id …
 ```
+
+Canonical IR/registries come from `CODEGENKIT_DOCS_ROOT`; ArtifactGraph does
+not follow that pointer.
 
 Missing ArtifactGraph never blocks the grill. Complete the deterministic dry
 generation fallback first, then follow

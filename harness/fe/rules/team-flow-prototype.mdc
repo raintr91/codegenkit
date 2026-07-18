@@ -13,7 +13,9 @@ Active: `/prototype` · `/grill-prototype` — **một** command / session.
 | `/prototype` | `.cursor/skills/prototype/SKILL.md` |
 | `/grill-prototype` | `.cursor/skills/grill-prototype/SKILL.md` |
 
-Prerequisite: configured docs hub đã grill → `pnpm portal:gen:dry --id …` OK.
+Prerequisite: member-configured `CODEGENKIT_DOCS_ROOT` points to the grilled
+docs registry hub → `pnpm portal:gen:dry --id …` OK. Never infer a sibling docs
+checkout; local ArtifactGraph is not the docs bridge.
 
 ## Thứ tự
 
