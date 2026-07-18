@@ -22,7 +22,6 @@ import {
   FE_SKILLS,
   feSkillsForAdapter,
 } from '../dist/install/harness.js'
-import { mergePlatformRepos } from '../dist/install/platform-repos.js'
 import {
   resolveAdapter,
   resolveBeAdapter,
@@ -115,11 +114,13 @@ test('dotnet adapter init syncs lane registries and records profiles', () => {
     )
     assert.equal(result.status, 0, result.stderr)
     assert.ok(existsSync(path.join(root, 'registries', options.registry)))
-    const platform = JSON.parse(readFileSync(path.join(root, 'platform-repos.json'), 'utf8'))
-    assert.equal(
-      platform.harness.profiles[options.profile].adapter,
-      adapter,
+    // Codegenkit never writes Platform DNA-owned project maps; the adapter is
+    // recorded in the install manifest instead.
+    assert.equal(existsSync(path.join(root, 'platform-repos.json')), false)
+    const manifest = JSON.parse(
+      readFileSync(path.join(root, '.codegenkit', 'install-manifest.json'), 'utf8'),
     )
+    assert.equal(manifest.adapters[options.profile], adapter)
   }
 })
 
@@ -369,16 +370,7 @@ test('fe init syncs skills and forbids docs assumptions', () => {
   for (const skill of FE_SKILLS) {
     assert.ok(existsSync(path.join(root, '.cursor', 'skills', skill, 'SKILL.md')))
   }
-  const maps = mergePlatformRepos({
-    projectRoot: root,
-    type: 'fe',
-    feAdapter: 'nuxt4',
-  })
-  const platform = JSON.parse(readFileSync(maps.path, 'utf8'))
-  assert.deepEqual(
-    platform.harness.profiles.fe.skills.filter((id) => FE_SKILLS.includes(id)).sort(),
-    [...FE_SKILLS].sort(),
-  )
+  assert.equal(existsSync(path.join(root, 'platform-repos.json')), false)
   const mcp = installCursorMcp({
     projectRoot: root,
     type: 'fe',
@@ -424,14 +416,11 @@ test('be init syncs API skills with Laravel adapter', () => {
     existsSync(path.join(root, '.cursor', 'skills', 'prototype', 'SKILL.md')),
     false,
   )
-  const maps = mergePlatformRepos({
-    projectRoot: root,
-    type: 'be',
-    beAdapter: 'laravel',
-  })
-  const platform = JSON.parse(readFileSync(maps.path, 'utf8'))
-  assert.deepEqual(platform.harness.profiles.be.skills, [...BE_SKILLS])
-  assert.equal(platform.harness.profiles.be.adapter, 'laravel')
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, '.codegenkit', 'install-manifest.json'), 'utf8'),
+  )
+  assert.equal(manifest.adapters.be, 'laravel')
+  assert.equal(existsSync(path.join(root, 'platform-repos.json')), false)
 })
 
 test('dotnet-line fe init skips /model skill', () => {
@@ -448,13 +437,7 @@ test('dotnet-line fe init skips /model skill', () => {
   for (const skill of feSkillsForAdapter('dotnet-line')) {
     assert.ok(existsSync(path.join(root, '.cursor', 'skills', skill, 'SKILL.md')))
   }
-  const maps = mergePlatformRepos({
-    projectRoot: root,
-    type: 'fe',
-    feAdapter: 'dotnet-line',
-  })
-  const platform = JSON.parse(readFileSync(maps.path, 'utf8'))
-  assert.equal(platform.harness.profiles.fe.skills.includes('model'), false)
+  assert.equal(existsSync(path.join(root, 'platform-repos.json')), false)
 })
 
 test('fullstack init syncs FE and BE subsets explicitly', () => {
@@ -468,15 +451,11 @@ test('fullstack init syncs FE and BE subsets explicitly', () => {
   for (const skill of [...FE_SKILLS, ...BE_SKILLS]) {
     assert.ok(existsSync(path.join(root, '.cursor', 'skills', skill, 'SKILL.md')))
   }
-  const maps = mergePlatformRepos({
-    projectRoot: root,
-    type: 'fullstack',
-    feAdapter: 'nextjs',
-    beAdapter: 'fastapi',
-  })
-  const platform = JSON.parse(readFileSync(maps.path, 'utf8'))
-  assert.equal(platform.harness.profiles.fe.adapter, 'nextjs')
-  assert.equal(platform.harness.profiles.be.adapter, 'fastapi')
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, '.codegenkit', 'install-manifest.json'), 'utf8'),
+  )
+  assert.equal(manifest.adapters.fe, 'nextjs')
+  assert.equal(manifest.adapters.be, 'fastapi')
   const registry = JSON.parse(
     readFileSync(path.join(root, 'registries', 'codegen.registry.json'), 'utf8'),
   )

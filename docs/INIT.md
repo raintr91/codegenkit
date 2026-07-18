@@ -14,9 +14,10 @@ Supported profiles are `fe`, `be`, and explicit `fullstack`. Docs/tests
 profiles must not install Codegenkit.
 
 `init` writes machine-local `.cursor/mcp.json`, syncs only selected lane skills,
-merges owned skill IDs into `platform-repos.json`, and installs the selected
-adapter's managed registry defaults under `registries/` (including the
-`dotnet-line` FE registry). Existing user-modified
+and installs the selected adapter's managed registry defaults under
+`registries/` (including the `dotnet-line` FE registry). Codegenkit never
+writes `platform-repos*.json`; the lane and adapters are recorded in
+`.codegenkit/install-manifest.json`. Existing user-modified
 registries are reported as conflicts unless `--force` is explicit.
 
 ## Managed lifecycle

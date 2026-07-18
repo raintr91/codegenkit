@@ -14,7 +14,6 @@ import {
   installHarness,
   pruneHarness,
 } from './install/harness.js'
-import { mergePlatformRepos } from './install/platform-repos.js'
 import { runAdapterEngine } from './adapters/run.js'
 import { runBeEngine } from './adapters/run-be.js'
 import { validateCommonRegistry } from './registries/common.js'
@@ -107,14 +106,6 @@ async function main(): Promise<void> {
     for (const file of harness.unchanged) console.log(`  unchanged: ${file}`)
     for (const file of harness.conflicts) console.log(`  conflict: ${file}`)
     for (const file of harness.stale) console.log(`  stale: ${file} (run codegenkit prune)`)
-    const maps = mergePlatformRepos({
-      projectRoot: root,
-      type,
-      feAdapter,
-      beAdapter,
-    })
-    console.log(`updated: ${maps.path}`)
-    for (const warning of maps.warnings) console.warn(`warning: ${warning}`)
     return
   }
 
