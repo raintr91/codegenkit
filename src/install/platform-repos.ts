@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { BE_SKILLS, FE_SKILLS } from './harness.js'
+import { BE_SKILLS, feSkillsForAdapter } from './harness.js'
 import type {
   BeAdapterId,
   CodegenType,
@@ -50,7 +50,8 @@ export function mergePlatformRepos(opts: {
     }
     data.harness.profiles[profile] ??= { groups: [profile], skills: [] }
     const skills: string[] = data.harness.profiles[profile].skills ?? []
-    const owned = profile === 'fe' ? FE_SKILLS : BE_SKILLS
+    const owned =
+      profile === 'fe' ? feSkillsForAdapter(opts.feAdapter) : BE_SKILLS
     for (const id of owned) {
       if (!skills.includes(id)) {
         skills.push(id)

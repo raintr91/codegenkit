@@ -17,8 +17,39 @@ import {
   type FeAdapterId,
 } from '../config/project-root.js'
 
-export const FE_SKILLS = ['prototype', 'wire', 'unit', 'grill-prototype', 'grill-unit'] as const
+export const FE_SKILLS = [
+  'prototype',
+  'wire',
+  'unit',
+  'grill-prototype',
+  'grill-unit',
+  'model',
+] as const
 export const BE_SKILLS = ['api', 'grill-api'] as const
+
+/** `/model` is web-FE only (Zod models); WinForms Line skips it. */
+export function feSkillsForAdapter(
+  adapter?: FeAdapterId,
+): readonly (typeof FE_SKILLS)[number][] {
+  if (adapter === 'dotnet-line') {
+    return FE_SKILLS.filter((id) => id !== 'model')
+  }
+  return FE_SKILLS
+}
+
+function skipHarnessRel(opts: {
+  type: CodegenType
+  adapters: InstallManifest['adapters']
+  rel: string
+}): boolean {
+  if (
+    opts.adapters.fe === 'dotnet-line' &&
+    opts.rel.split(path.sep).join('/').startsWith('skills/model/')
+  ) {
+    return true
+  }
+  return false
+}
 
 export interface InstallManifest {
   schemaVersion: 1
@@ -138,6 +169,15 @@ function currentTargets(manifest: Pick<InstallManifest, 'type' | 'adapters'>): S
   for (const entry of managedSources(manifest.type, manifest.adapters)) {
     for (const source of walk(entry.root)) {
       const rel = path.relative(entry.root, source)
+      if (
+        skipHarnessRel({
+          type: manifest.type,
+          adapters: manifest.adapters,
+          rel,
+        })
+      ) {
+        continue
+      }
       targets.add(path.join(entry.targetPrefix, rel).split(path.sep).join('/'))
     }
   }
@@ -170,6 +210,7 @@ export function installHarness(opts: {
     const sourceRoot = entry.root
     for (const source of walk(sourceRoot)) {
       const rel = path.relative(sourceRoot, source)
+      if (skipHarnessRel({ type: opts.type, adapters, rel })) continue
       const targetRel = path.join(entry.targetPrefix, rel).split(path.sep).join('/')
       const target = path.join(root, targetRel)
       const content = readFileSync(source, 'utf8')

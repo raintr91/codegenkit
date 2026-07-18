@@ -2,7 +2,7 @@
 
 Independent MCP/harness package for FE and BE code generation.
 
-The installers default to immutable release tag `v0.4.0` and enforce the
+The installers default to immutable release tag `v0.5.0` and enforce the
 committed lockfile (`pnpm --frozen-lockfile` or `npm ci`). Set
 `CODEGENKIT_REF` / PowerShell `-Ref` only for an explicit alternate release.
 

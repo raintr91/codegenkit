@@ -1,0 +1,39 @@
+---
+name: model
+description: /model — Zod models and TS types in models/ / validations/ (FE Codegenkit).
+disable-model-invocation: true
+---
+
+# /model — FE contract models
+
+**Owner:** Codegenkit (`--type=fe`) · Adapters: `nuxt4` | `nextjs`  
+Not synced for `dotnet-line` (WinForms contracts live outside Zod `models/`).
+
+## Scope
+
+Write/update **Zod schemas + TS types** under `models/` and `validations/` from
+docs-hub Code `ir/spec.yaml` (entities + api). **Keep contract keys unchanged.**
+
+| Load | Do not load |
+|------|-------------|
+| Feature `ir/spec.yaml` — entities, api | Full legacy archaeology |
+| Target files under `models/`, `validations/` | Trace, full `bundle.legacy` unless gap |
+| Progressive path resolve only if FE↔BE needed | Full `legacy-api-migration` dumps |
+
+## Workflow
+
+1. Resolve feature via `--id` / `--spec` (same docs-root rules as `/prototype`)
+2. Align `models/` + `validations/` with entities/api in the IR
+3. Do not rewrite unrelated UI or API server code here
+
+## Handoff
+
+→ `/wire` when forms/services need the updated schemas  
+→ `/api` (BE Codegenkit) when the backend contract must catch up
+
+## Accelerators (optional)
+
+```text
+if ArtifactGraph available: tags/parity for contract marks
+else: scoped IR + registry evidence only
+```

@@ -8,6 +8,7 @@ export {
   manifestFile,
   BE_SKILLS,
   FE_SKILLS,
+  feSkillsForAdapter,
   type HarnessInstallResult,
   type HarnessStatus,
   type InstallManifest,

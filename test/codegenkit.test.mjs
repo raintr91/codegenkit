@@ -20,6 +20,7 @@ import {
   harnessStatus,
   BE_SKILLS,
   FE_SKILLS,
+  feSkillsForAdapter,
 } from '../dist/install/harness.js'
 import { mergePlatformRepos } from '../dist/install/platform-repos.js'
 import {
@@ -433,6 +434,29 @@ test('be init syncs API skills with Laravel adapter', () => {
   assert.equal(platform.harness.profiles.be.adapter, 'laravel')
 })
 
+test('dotnet-line fe init skips /model skill', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-line-model-'))
+  installHarness({
+    projectRoot: root,
+    type: 'fe',
+    feAdapter: 'dotnet-line',
+  })
+  assert.equal(
+    existsSync(path.join(root, '.cursor', 'skills', 'model', 'SKILL.md')),
+    false,
+  )
+  for (const skill of feSkillsForAdapter('dotnet-line')) {
+    assert.ok(existsSync(path.join(root, '.cursor', 'skills', skill, 'SKILL.md')))
+  }
+  const maps = mergePlatformRepos({
+    projectRoot: root,
+    type: 'fe',
+    feAdapter: 'dotnet-line',
+  })
+  const platform = JSON.parse(readFileSync(maps.path, 'utf8'))
+  assert.equal(platform.harness.profiles.fe.skills.includes('model'), false)
+})
+
 test('fullstack init syncs FE and BE subsets explicitly', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-fullstack-'))
   installHarness({
@@ -805,7 +829,7 @@ test('FastAPI multi-entity write records schema-v2 ownership hashes', () => {
     readFileSync(path.join(root, 'generated/codegen.manifest.json'), 'utf8'),
   )
   assert.equal(manifest.schemaVersion, 2)
-  assert.equal(manifest.packageVersion, '0.4.0')
+  assert.equal(manifest.packageVersion, '0.5.0')
   assert.equal(manifest.generator, 'fastapi-codegen')
   assert.equal(manifest.entities.length, 2)
   assert.ok(manifest.files['src/app/generated_routers.py'])
@@ -979,7 +1003,7 @@ test('installers pin the released tag and enforce lockfiles', () => {
   const shell = readFileSync('install.sh', 'utf8')
   const powershell = readFileSync('install.ps1', 'utf8')
   for (const script of [shell, powershell]) {
-    assert.match(script, /v0\.4\.0/)
+    assert.match(script, /v0\.5\.0/)
     assert.match(script, /pnpm install --frozen-lockfile/)
     assert.match(script, /npm ci/)
     assert.doesNotMatch(script, /(?:REF:-main|Ref = "main")/)
