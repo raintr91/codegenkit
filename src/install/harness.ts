@@ -1,8 +1,10 @@
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -16,6 +18,7 @@ import {
   type CodegenType,
   type FeAdapterId,
 } from '../config/project-root.js'
+import { forgetInstall, recordInstall } from './ledger.js'
 
 export const FE_SKILLS = [
   'prototype',
@@ -94,8 +97,42 @@ export interface PruneResult {
   removed: string[]
 }
 
+export interface HarnessUninstallResult {
+  manifest: string
+  dryRun: boolean
+  removable: string[]
+  removed: string[]
+  modified: string[]
+  missing: string[]
+  manifestRemoved: boolean
+}
+
 function hash(content: string | Buffer): string {
   return createHash('sha256').update(content).digest('hex')
+}
+
+function lexists(file: string): boolean {
+  try {
+    lstatSync(file)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function managedPath(root: string, relative: string): string {
+  const target = path.resolve(root, ...relative.split('/'))
+  if (target !== root && !target.startsWith(`${root}${path.sep}`)) {
+    throw new Error(`Managed Codegenkit path escapes project root: ${relative}`)
+  }
+  let existing = target
+  while (!lexists(existing) && existing !== root) existing = path.dirname(existing)
+  const realRoot = realpathSync(root)
+  const realExisting = realpathSync(existing)
+  if (realExisting !== realRoot && !realExisting.startsWith(`${realRoot}${path.sep}`)) {
+    throw new Error(`Managed Codegenkit path escapes project root through a symlink: ${relative}`)
+  }
+  return target
 }
 
 function walk(root: string): string[] {
@@ -114,16 +151,33 @@ export function manifestFile(root: string): string {
 }
 
 function readManifest(root: string, allowIncompatible = false): InstallManifest | null {
-  const file = manifestFile(root)
+  const file = managedPath(root, '.codegenkit/install-manifest.json')
   if (!existsSync(file)) return null
   const manifest = JSON.parse(readFileSync(file, 'utf8')) as InstallManifest
   if (
+    manifest.package !== '@platform/codegenkit' ||
+    !manifest.files ||
+    typeof manifest.files !== 'object' ||
+    Array.isArray(manifest.files) ||
     !allowIncompatible &&
     (manifest.schemaVersion !== 1 || manifest.toolApi !== 1 || manifest.harnessApi !== 1)
   ) {
     throw new Error(
       `Unsupported Codegenkit install manifest API at ${file}; upgrade Codegenkit or remove the stale manifest explicitly.`,
     )
+  }
+  for (const [relative, metadata] of Object.entries(manifest.files)) {
+    if (
+      path.isAbsolute(relative) ||
+      relative.includes('\\') ||
+      relative.split('/').some((part) => part === '' || part === '.' || part === '..') ||
+      !metadata ||
+      typeof metadata !== 'object' ||
+      !/^[a-f0-9]{64}$/.test(metadata.sha256)
+    ) {
+      throw new Error(`Invalid managed path in Codegenkit install manifest: ${relative}`)
+    }
+    managedPath(root, relative)
   }
   return manifest
 }
@@ -212,7 +266,7 @@ export function installHarness(opts: {
       const rel = path.relative(sourceRoot, source)
       if (skipHarnessRel({ type: opts.type, adapters, rel })) continue
       const targetRel = path.join(entry.targetPrefix, rel).split(path.sep).join('/')
-      const target = path.join(root, targetRel)
+      const target = managedPath(root, targetRel)
       const content = readFileSync(source, 'utf8')
       files[targetRel] = {
         source: path.relative(packageRoot(), source).split(path.sep).join('/'),
@@ -239,7 +293,7 @@ export function installHarness(opts: {
   for (const [targetRel, metadata] of Object.entries(previous?.files ?? {})) {
     if (files[targetRel]) continue
     files[targetRel] = { ...metadata, stale: true }
-    result.stale.push(path.join(root, targetRel))
+    result.stale.push(managedPath(root, targetRel))
   }
 
   mkdirSync(path.dirname(manifestFile(root)), { recursive: true })
@@ -260,6 +314,7 @@ export function installHarness(opts: {
       2,
     )}\n`,
   )
+  recordInstall(root)
   return result
 }
 
@@ -294,7 +349,7 @@ export function harnessStatus(projectRoot?: string): HarnessStatus {
     previous.schemaVersion === 1 && previous.toolApi === 1 && previous.harnessApi === 1
   const selectedTargets = compatibleApis ? currentTargets(previous) : null
   for (const [targetRel, metadata] of Object.entries(previous.files)) {
-    const target = path.join(root, targetRel)
+    const target = managedPath(root, targetRel)
     if (!existsSync(target)) {
       missing.push(target)
       continue
@@ -341,7 +396,7 @@ export function pruneHarness(opts: {
   const selectedTargets = currentTargets(previous)
   for (const [targetRel, metadata] of Object.entries(previous.files)) {
     if (selectedTargets.has(targetRel)) continue
-    const target = path.join(root, targetRel)
+    const target = managedPath(root, targetRel)
     if (!existsSync(target)) continue
     if (hash(readFileSync(target)) !== metadata.sha256) {
       result.modified.push(target)
@@ -360,6 +415,75 @@ export function pruneHarness(opts: {
       delete previous.files[targetRel]
     }
     writeFileSync(manifestFile(root), `${JSON.stringify(previous, null, 2)}\n`)
+  }
+  return result
+}
+
+function pruneEmptyDirs(root: string, files: string[]): void {
+  const directories = new Set<string>()
+  for (const file of files) {
+    let directory = path.dirname(file)
+    while (directory !== root && directory.startsWith(`${root}${path.sep}`)) {
+      directories.add(directory)
+      directory = path.dirname(directory)
+    }
+  }
+  for (const directory of [...directories].sort((a, b) => b.length - a.length)) {
+    try {
+      if (existsSync(directory) && readdirSync(directory).length === 0) {
+        rmSync(directory, { recursive: false })
+      }
+    } catch {
+      // Keep non-empty or busy directories.
+    }
+  }
+}
+
+/**
+ * Remove all manifest-owned harness assets, current and stale. Files whose
+ * content no longer matches the recorded installed hash are preserved.
+ */
+export function uninstallHarness(opts: {
+  projectRoot?: string
+  yes?: boolean
+} = {}): HarnessUninstallResult {
+  const root = path.resolve(opts.projectRoot ?? process.cwd())
+  const manifest = readManifest(root)
+  const dryRun = !opts.yes
+  const manifestPath = manifestFile(root)
+  const result: HarnessUninstallResult = {
+    manifest: manifestPath,
+    dryRun,
+    removable: [],
+    removed: [],
+    modified: [],
+    missing: [],
+    manifestRemoved: false,
+  }
+  if (!manifest) return result
+
+  for (const [relative, metadata] of Object.entries(manifest.files)) {
+    const target = managedPath(root, relative)
+    if (!existsSync(target)) {
+      result.missing.push(target)
+      continue
+    }
+    if (hash(readFileSync(target)) !== metadata.sha256) {
+      result.modified.push(target)
+      continue
+    }
+    result.removable.push(target)
+    if (opts.yes) {
+      rmSync(target)
+      result.removed.push(target)
+    }
+  }
+
+  if (!dryRun && existsSync(manifestPath)) {
+    rmSync(manifestPath)
+    result.manifestRemoved = true
+    forgetInstall(root)
+    pruneEmptyDirs(root, [...result.removed, manifestPath])
   }
   return result
 }

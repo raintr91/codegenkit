@@ -28,6 +28,9 @@ Inspect and safely clean managed harness assets:
 codegenkit status
 codegenkit prune                         # dry-run
 codegenkit prune --yes                   # delete unmodified stale files only
+codegenkit deinit                        # preview/confirm this repo + local MCP
+codegenkit uninstall                     # preview/confirm all installs + MCP + CLI
+codegenkit uninstall --yes               # non-interactive global removal
 ```
 
 Changing profile or adapter keeps targets from the previous install in
@@ -35,7 +38,27 @@ Changing profile or adapter keeps targets from the previous install in
 `healthy`, `missing`, `modified`, or `stale`, plus package/API compatibility.
 `prune` considers only paths recorded in that manifest, never
 `platform-repos.json` or unrelated project files, and always preserves locally
-modified stale files.
+modified stale files. It never acts as a full uninstall.
+
+`init` records destination repos in
+`$CODEGENKIT_STATE_DIR/installs.json`, `$XDG_STATE_HOME/codegenkit/installs.json`,
+or `~/.local/state/codegenkit/installs.json`. This ledger lets
+`codegenkit uninstall` run from any directory and remove every tracked harness,
+each repo-local Cursor MCP entry, the global Cursor MCP entry, and the CLI.
+Legacy ledger-less installs can be recovered with:
+
+```bash
+codegenkit uninstall --discover ~/workspace --yes
+```
+
+Both removal commands are dry-run by default outside a TTY and preview then ask
+for confirmation in a TTY. `--yes` applies directly. Manifest-owned files are
+deleted only when their content still matches the installed hash; modified
+files are preserved and reported. Shared `.cursor/mcp.json` is unmerged by
+removing only `mcpServers.codegenkit`, leaving other toolkits and settings
+untouched. Adapter registry defaults are whole manifest-owned files, so a
+registry changed by a member or another toolkit is preserved rather than
+partially rewritten.
 
 Executable tools:
 

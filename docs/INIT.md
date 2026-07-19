@@ -43,6 +43,9 @@ separate unit-generation engine.
 codegenkit status                         # JSON health and compatibility report
 codegenkit prune                          # dry-run: list safe stale removals
 codegenkit prune --yes                    # remove unmodified stale files
+codegenkit deinit                         # current repo harness + local MCP
+codegenkit uninstall                      # all tracked repos + MCP + CLI
+codegenkit uninstall --discover ~/workspace --yes
 ```
 
 `status` buckets manifest-owned targets into `healthy`, `missing`, `modified`,
@@ -51,3 +54,17 @@ always keeps it. Prune derives the current managed set from the profile and
 adapters stored in the manifest. It never scans for deletion candidates and
 never deletes `platform-repos.json` or any other path absent from the install
 manifest.
+
+`deinit` is the inverse of `init` for one destination repo. `uninstall` is the
+machine-wide lifecycle command and can run from anywhere: it reads Codegenkit's
+XDG state ledger, removes each tracked repo install and local Cursor MCP entry,
+then removes global Cursor MCP wiring and the CLI. Both commands preview and
+confirm in a TTY; use `--yes` for automation.
+
+Uninstall removes current and stale manifest-owned files only when their SHA-256
+still matches the install manifest. Modified files and registries are preserved
+and reported. Shared Cursor MCP JSON is edited by deleting only
+`mcpServers.codegenkit`, so other toolkit entries remain intact. The ledger is
+stored under `$CODEGENKIT_STATE_DIR`, otherwise
+`$XDG_STATE_HOME/codegenkit` or `~/.local/state/codegenkit`; `--discover`
+recovers older installs that do not yet appear there.
