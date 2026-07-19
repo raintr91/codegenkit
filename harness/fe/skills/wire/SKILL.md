@@ -12,6 +12,12 @@ Use after `/prototype` when tags/handoff mark `#wire-only` or real API integrati
 Keep generation through Codegenkit adapters; resolve canonical docs evidence
 through `CODEGENKIT_DOCS_ROOT` and do not invent sibling layout.
 
+## Route
+
+IR/handoff via `CODEGENKIT_DOCS_ROOT`; architecture IDs via Hubdocs
+(`HUBDOCS_ROOT`); BE/FE symbols via per-repo `codegraph-<key>`; ArtifactGraph
+local tags only. Never workspace-parent graphs or member-edited MCP.
+
 ## Accelerators (optional)
 
 ```text

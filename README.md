@@ -2,7 +2,7 @@
 
 Independent MCP/harness package for FE and BE code generation.
 
-The installers default to immutable release tag `v0.5.0` and enforce the
+The installers default to immutable release tag `v0.6.0` and enforce the
 committed lockfile (`pnpm --frozen-lockfile` or `npm ci`). Set
 `CODEGENKIT_REF` / PowerShell `-Ref` only for an explicit alternate release.
 
@@ -11,17 +11,24 @@ Adapters by lane:
 - FE: `nuxt4`, `nextjs`, `dotnet-line`
 - BE: `fastapi`, `laravel`, `dotnet-integration`
 
-Docs/tests init is **forbidden**. Choose a lane and stack:
+Docs/tests init is **forbidden**. Choose a lane and stack (interactive
+`codegenkit init` wizard, or flags + `--yes` for CI):
 
 ```bash
+codegenkit init
 codegenkit init --type=fe --adapter=nuxt4 --docs-root=/path/to/docs-hub --yes
 codegenkit init --type=be --adapter=fastapi --yes
 codegenkit init --type=be --adapter=laravel --yes
 codegenkit init --type=fe --adapter=dotnet-line --yes
 codegenkit init --type=be --adapter=dotnet-integration --yes
 codegenkit init --type=fullstack --fe-adapter=nextjs --be-adapter=fastapi --yes
+codegenkit init --type=fe --adapter=nuxt4 --target=none --no-codegraph --yes
 ```
 
+Evidence routing: architecture/C4 → Hubdocs (`HUBDOCS_ROOT`); IR/registry/gen →
+`CODEGENKIT_DOCS_ROOT`; symbols/call-graph for repo X → Platform DNA-wired
+`codegraph-<key>`; ArtifactGraph stays local-only. Cross-repo CodeGraph MCP is
+wired by Platform DNA (`--codegraph` / `--no-codegraph`), never by Codegenkit.
 Inspect and safely clean managed harness assets:
 
 ```bash

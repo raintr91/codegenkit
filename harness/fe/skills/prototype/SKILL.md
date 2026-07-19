@@ -21,6 +21,14 @@ Do not invent sibling docs-hub paths. Pass `CODEGENKIT_DOCS_ROOT` or
 ArtifactGraph installed in FE is local-only and must not substitute for this
 pointer.
 
+## Route
+
+Architecture/C4 → Hubdocs (`HUBDOCS_ROOT`); IR/registry/gen →
+`CODEGENKIT_DOCS_ROOT`; symbols/call-graph for repo X → Platform DNA-wired
+`codegraph-<repo-key>`. Never workspace-parent graphs, sibling-path inference,
+or member-edited MCP. Local ArtifactGraph is allowlist/tag hints for this repo
+only.
+
 ## Workflow
 
 ```bash

@@ -18,6 +18,14 @@ import {
   type CodegenType,
   type FeAdapterId,
 } from '../config/project-root.js'
+import type { AgentMcpOwnership } from './agents.js'
+import {
+  canonicalGitignorePattern,
+  ensureGitignoreEntries,
+  mergeOwnedGitignore,
+  removeGitignoreEntries,
+  type OwnedGitignoreEntry,
+} from './gitignore.js'
 import { forgetInstall, recordInstall } from './ledger.js'
 
 export const FE_SKILLS = [
@@ -66,6 +74,22 @@ export interface InstallManifest {
   toolApi: 1
   harnessApi: 1
   files: Record<string, { source: string; sha256: string; stale?: boolean }>
+  /** Exact `.gitignore` entries Codegenkit ensured, with shared-ownership. */
+  gitignore?: OwnedGitignoreEntry[]
+  /** Per-agent MCP ownership so status/deinit can verify and unwire safely. */
+  mcp?: Record<string, AgentMcpOwnership>
+}
+
+export interface GitignoreEntryStatus {
+  pattern: string
+  shared: boolean
+  status: 'present' | 'missing'
+}
+
+export interface McpAgentStatus {
+  agent: string
+  file: string
+  status: 'present' | 'missing' | 'modified'
 }
 
 export interface HarnessInstallResult {
@@ -73,6 +97,7 @@ export interface HarnessInstallResult {
   unchanged: string[]
   conflicts: string[]
   stale: string[]
+  gitignore: OwnedGitignoreEntry[]
 }
 
 export interface HarnessStatus {
@@ -88,6 +113,8 @@ export interface HarnessStatus {
   missing: string[]
   modified: string[]
   stale: string[]
+  gitignore: GitignoreEntryStatus[]
+  mcp: McpAgentStatus[]
   compat: 'ok' | 'warn' | 'fail'
 }
 
@@ -105,6 +132,8 @@ export interface HarnessUninstallResult {
   modified: string[]
   missing: string[]
   manifestRemoved: boolean
+  /** Exclusive gitignore patterns removed (or would remove). */
+  gitignoreRemoved: string[]
 }
 
 function hash(content: string | Buffer): string {
@@ -150,10 +179,79 @@ export function manifestFile(root: string): string {
   return path.join(root, '.codegenkit', 'install-manifest.json')
 }
 
+/** Public read of the install manifest (null when absent). */
+export function readInstallManifest(projectRoot?: string): InstallManifest | null {
+  return readManifest(path.resolve(projectRoot ?? process.cwd()))
+}
+
+function validateManifestGitignore(value: unknown): OwnedGitignoreEntry[] {
+  if (value === undefined) return []
+  if (!Array.isArray(value)) {
+    throw new Error('Invalid Codegenkit install manifest gitignore')
+  }
+  const seen = new Set<string>()
+  const entries: OwnedGitignoreEntry[] = []
+  for (const raw of value) {
+    if (
+      !raw
+      || typeof raw !== 'object'
+      || typeof (raw as OwnedGitignoreEntry).pattern !== 'string'
+      || !(raw as OwnedGitignoreEntry).pattern.trim()
+      || /[\r\n]/.test((raw as OwnedGitignoreEntry).pattern)
+    ) {
+      throw new Error('Invalid Codegenkit install manifest gitignore entry')
+    }
+    if (
+      (raw as OwnedGitignoreEntry).shared !== undefined
+      && typeof (raw as OwnedGitignoreEntry).shared !== 'boolean'
+    ) {
+      throw new Error('Invalid Codegenkit install manifest gitignore shared flag')
+    }
+    const pattern = (raw as OwnedGitignoreEntry).pattern.trim()
+    const canonical = canonicalGitignorePattern(pattern)
+    if (!canonical || seen.has(canonical)) continue
+    seen.add(canonical)
+    entries.push({
+      pattern,
+      ...((raw as OwnedGitignoreEntry).shared ? { shared: true } : {}),
+    })
+  }
+  return entries
+}
+
+function validateManifestMcp(value: unknown): Record<string, AgentMcpOwnership> | undefined {
+  if (value === undefined) return undefined
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Invalid Codegenkit install manifest mcp')
+  }
+  const out: Record<string, AgentMcpOwnership> = {}
+  for (const [agent, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (
+      !raw
+      || typeof raw !== 'object'
+      || typeof (raw as AgentMcpOwnership).file !== 'string'
+      || !(raw as AgentMcpOwnership).file.trim()
+      || path.isAbsolute((raw as AgentMcpOwnership).file)
+      || (raw as AgentMcpOwnership).file.includes('\\')
+      || (raw as AgentMcpOwnership).file.split('/').some((part) => part === '' || part === '.' || part === '..')
+      || typeof (raw as AgentMcpOwnership).sha256 !== 'string'
+      || !/^[a-f0-9]{64}$/.test((raw as AgentMcpOwnership).sha256)
+    ) {
+      throw new Error(`Invalid Codegenkit install manifest mcp entry: ${agent}`)
+    }
+    out[agent] = {
+      file: (raw as AgentMcpOwnership).file,
+      sha256: (raw as AgentMcpOwnership).sha256,
+    }
+  }
+  return Object.keys(out).length ? out : undefined
+}
+
 function readManifest(root: string, allowIncompatible = false): InstallManifest | null {
   const file = managedPath(root, '.codegenkit/install-manifest.json')
   if (!existsSync(file)) return null
-  const manifest = JSON.parse(readFileSync(file, 'utf8')) as InstallManifest
+  const raw = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>
+  const manifest = raw as unknown as InstallManifest
   if (
     manifest.package !== '@platform/codegenkit' ||
     !manifest.files ||
@@ -179,7 +277,13 @@ function readManifest(root: string, allowIncompatible = false): InstallManifest 
     }
     managedPath(root, relative)
   }
-  return manifest
+  const gitignore = validateManifestGitignore(raw.gitignore)
+  const mcp = validateManifestMcp(raw.mcp)
+  return {
+    ...manifest,
+    ...(gitignore.length ? { gitignore } : {}),
+    ...(mcp ? { mcp } : {}),
+  }
 }
 
 function profiles(type: CodegenType): Array<'fe' | 'be'> {
@@ -244,6 +348,8 @@ export function installHarness(opts: {
   feAdapter?: FeAdapterId
   beAdapter?: BeAdapterId
   force?: boolean
+  gitignoreEntries?: OwnedGitignoreEntry[]
+  mcp?: Record<string, AgentMcpOwnership>
 }): HarnessInstallResult {
   const root = path.resolve(opts.projectRoot)
   const previous = readManifest(root)
@@ -256,6 +362,7 @@ export function installHarness(opts: {
     unchanged: [],
     conflicts: [],
     stale: [],
+    gitignore: [],
   }
   const files: InstallManifest['files'] = {}
   const sources = managedSources(opts.type, adapters)
@@ -296,26 +403,45 @@ export function installHarness(opts: {
     result.stale.push(managedPath(root, targetRel))
   }
 
+  // Merge ignore entries into .gitignore. Claim all requested toolkit targets
+  // (Hubdocs/Platform DNA shared-ownership contract): deinit only removes
+  // exclusive entries, so claiming a shared pattern already present is safe.
+  const requestedIgnore = opts.gitignoreEntries ?? []
+  const ensureResult = requestedIgnore.length
+    ? ensureGitignoreEntries(root, requestedIgnore.map((entry) => entry.pattern))
+    : { file: path.join(root, '.gitignore'), added: [] as string[], changed: false }
+  if (ensureResult.changed) result.written.push(ensureResult.file)
+  else if (requestedIgnore.length) result.unchanged.push(ensureResult.file)
+
+  const gitignore = mergeOwnedGitignore(previous?.gitignore, requestedIgnore)
+  result.gitignore = gitignore
+
+  const mcp = mergeManifestMcp(previous?.mcp, opts.mcp)
+
   mkdirSync(path.dirname(manifestFile(root)), { recursive: true })
-  writeFileSync(
-    manifestFile(root),
-    `${JSON.stringify(
-      {
-        schemaVersion: 1,
-        package: '@platform/codegenkit',
-        packageVersion: packageVersion(),
-        type: opts.type,
-        adapters,
-        toolApi: 1,
-        harnessApi: 1,
-        files,
-      } satisfies InstallManifest,
-      null,
-      2,
-    )}\n`,
-  )
+  const manifest: InstallManifest = {
+    schemaVersion: 1,
+    package: '@platform/codegenkit',
+    packageVersion: packageVersion(),
+    type: opts.type,
+    adapters,
+    toolApi: 1,
+    harnessApi: 1,
+    files,
+    ...(gitignore.length ? { gitignore } : {}),
+    ...(mcp ? { mcp } : {}),
+  }
+  writeFileSync(manifestFile(root), `${JSON.stringify(manifest, null, 2)}\n`)
   recordInstall(root)
   return result
+}
+
+function mergeManifestMcp(
+  previous: Record<string, AgentMcpOwnership> | undefined,
+  next: Record<string, AgentMcpOwnership> | undefined,
+): Record<string, AgentMcpOwnership> | undefined {
+  const merged = { ...(previous ?? {}), ...(next ?? {}) }
+  return Object.keys(merged).length ? merged : undefined
 }
 
 export function harnessStatus(projectRoot?: string): HarnessStatus {
@@ -341,6 +467,8 @@ export function harnessStatus(projectRoot?: string): HarnessStatus {
       missing,
       modified,
       stale,
+      gitignore: [],
+      mcp: [],
       compat: 'warn',
     }
   }
@@ -376,12 +504,83 @@ export function harnessStatus(projectRoot?: string): HarnessStatus {
     missing,
     modified,
     stale,
+    gitignore: gitignoreStatus(root, previous),
+    mcp: mcpStatus(root, previous),
     compat: !compatibleApis
       ? 'fail'
       : previous.packageVersion === currentPackageVersion
         ? 'ok'
         : 'warn',
   }
+}
+
+function gitignoreStatus(root: string, manifest: InstallManifest): GitignoreEntryStatus[] {
+  const entries = manifest.gitignore ?? []
+  if (!entries.length) return []
+  const file = path.join(root, '.gitignore')
+  const present = new Set<string>()
+  if (existsSync(file) && lstatSync(file).isFile()) {
+    for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
+      const trimmed = line.trim()
+      if (trimmed && !trimmed.startsWith('#')) present.add(canonicalGitignorePattern(trimmed))
+    }
+  }
+  return entries.map((entry) => ({
+    pattern: entry.pattern,
+    shared: Boolean(entry.shared),
+    status: present.has(canonicalGitignorePattern(entry.pattern)) ? 'present' : 'missing',
+  }))
+}
+
+function mcpEntryCanonicalHash(entry: unknown): string {
+  const canonical = (value: unknown): string => {
+    if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`
+    if (value && typeof value === 'object') {
+      const entries = Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`)
+      return `{${entries.join(',')}}`
+    }
+    return JSON.stringify(value ?? null)
+  }
+  return createHash('sha256').update(canonical(entry)).digest('hex')
+}
+
+function mcpStatus(root: string, manifest: InstallManifest): McpAgentStatus[] {
+  const mcp = manifest.mcp ?? {}
+  const out: McpAgentStatus[] = []
+  for (const [agent, ownership] of Object.entries(mcp)) {
+    const file = managedPath(root, ownership.file)
+    if (!existsSync(file)) {
+      out.push({ agent, file: ownership.file, status: 'missing' })
+      continue
+    }
+    const lower = ownership.file.toLowerCase()
+    const isJsonMcp =
+      lower.endsWith('.json')
+      || lower.endsWith('mcp.json')
+      || lower.endsWith('settings.json')
+      || lower.endsWith('mcp_config.json')
+    if (!isJsonMcp) {
+      out.push({ agent, file: ownership.file, status: 'present' })
+      continue
+    }
+    try {
+      const doc = JSON.parse(readFileSync(file, 'utf8')) as { mcpServers?: Record<string, unknown> }
+      const entry = doc.mcpServers?.codegenkit
+      if (entry === undefined) {
+        out.push({ agent, file: ownership.file, status: 'missing' })
+      } else if (mcpEntryCanonicalHash(entry) === ownership.sha256) {
+        out.push({ agent, file: ownership.file, status: 'present' })
+      } else {
+        out.push({ agent, file: ownership.file, status: 'modified' })
+      }
+    } catch {
+      out.push({ agent, file: ownership.file, status: 'modified' })
+    }
+  }
+  return out
 }
 
 export function pruneHarness(opts: {
@@ -442,6 +641,7 @@ function pruneEmptyDirs(root: string, files: string[]): void {
 /**
  * Remove all manifest-owned harness assets, current and stale. Files whose
  * content no longer matches the recorded installed hash are preserved.
+ * Exclusive gitignore entries are removed; shared entries are kept.
  */
 export function uninstallHarness(opts: {
   projectRoot?: string
@@ -459,6 +659,7 @@ export function uninstallHarness(opts: {
     modified: [],
     missing: [],
     manifestRemoved: false,
+    gitignoreRemoved: [],
   }
   if (!manifest) return result
 
@@ -476,6 +677,35 @@ export function uninstallHarness(opts: {
     if (opts.yes) {
       rmSync(target)
       result.removed.push(target)
+    }
+  }
+
+  // Remove only exclusively-owned ignore entries; shared entries (for example
+  // `.cursor/`) may still be relied on by another toolkit, so keep them.
+  const exclusiveIgnore = (manifest.gitignore ?? [])
+    .filter((entry) => !entry.shared)
+    .map((entry) => entry.pattern)
+  if (exclusiveIgnore.length) {
+    if (dryRun) {
+      const file = path.join(root, '.gitignore')
+      const present =
+        existsSync(file) && lstatSync(file).isFile()
+          ? new Set(
+              readFileSync(file, 'utf8')
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter((line) => line && !line.startsWith('#'))
+                .map(canonicalGitignorePattern),
+            )
+          : new Set<string>()
+      for (const pattern of exclusiveIgnore) {
+        if (present.has(canonicalGitignorePattern(pattern))) {
+          result.gitignoreRemoved.push(pattern)
+        }
+      }
+    } else {
+      const removed = removeGitignoreEntries(root, exclusiveIgnore)
+      result.gitignoreRemoved.push(...removed.removed)
     }
   }
 

@@ -8,27 +8,30 @@ import {
   resolveBeAdapter,
   resolveFeAdapter,
   resolveProjectRoot,
-  resolveType,
 } from './config/project-root.js'
 import {
-  installCursorMcp,
-  uninstallCursorMcp,
-  type McpLocation,
-} from './install/cursor-mcp.js'
+  installAgents,
+  uninstallAgents,
+} from './install/agents.js'
+import { uninstallCursorMcp, type McpLocation } from './install/cursor-mcp.js'
+import { generatedTargets } from './install/gitignore.js'
 import {
   BE_SKILLS,
   FE_SKILLS,
   harnessStatus,
   installHarness,
   pruneHarness,
+  readInstallManifest,
   uninstallHarness,
 } from './install/harness.js'
+import { resolveInitWizard } from './install/init-wizard.js'
 import {
   discoverInstalls,
   ledgerPath,
   readLedger,
   removeLedger,
 } from './install/ledger.js'
+import { wirePlatformDnaCodegraph } from './install/platform-dna.js'
 import { runAdapterEngine } from './adapters/run.js'
 import { runBeEngine } from './adapters/run-be.js'
 import { validateCommonRegistry } from './registries/common.js'
@@ -54,9 +57,10 @@ function passthrough(after: string): string[] {
 function usage(): never {
   console.log(`codegenkit ${packageVersion()}
 
-  init --type=fe --adapter=nuxt4|nextjs|dotnet-line [--project-root <path>] [--docs-root <path>] [--location=local|global] [--force] [--yes]
-  init --type=be --adapter=fastapi|laravel|dotnet-integration [--project-root <path>] [--location=local|global] [--force] [--yes]
-  init --type=fullstack --fe-adapter=nuxt4|nextjs|dotnet-line --be-adapter=fastapi|laravel|dotnet-integration …
+  init [--type=fe|be|fullstack] [--adapter=…] [--fe-adapter=…] [--be-adapter=…]
+       [--target=auto|all|none|cursor,…] [--docs-root <path>] [--with=ArtifactGraph]
+       [--codegraph|--no-codegraph] [--codegraph-repos=key,…] [--project-root <path>]
+       [--force] [--yes]
   status [--project-root <path>]
   prune [--project-root <path>] [--yes]    # dry-run by default
   deinit [--project-root <path>] [--yes]   # current repo harness + local MCP
@@ -163,20 +167,45 @@ function repoTargets(flags: UninstallFlags): string[] {
 
 function runUninstallScope(scope: UninstallScope, flags: UninstallFlags): void {
   const cwd = path.resolve(flags.projectRoot ?? process.cwd())
+  const doMcpLocal = (root: string): void => {
+    const manifest = readInstallManifest(root)
+    const result = uninstallAgents({
+      projectRoot: root,
+      yes: flags.yes,
+      recorded: manifest?.mcp,
+    })
+    for (const line of result.removed) {
+      console.log(`  ${flags.yes ? 'unwired' : 'would unwire'} MCP: ${line}`)
+    }
+    for (const line of result.preserved) {
+      console.log(`  preserve modified MCP: ${line}`)
+    }
+  }
   const doHarness = (root: string): void => {
     console.log(`repo: ${root}`)
+    // Unwire MCP first while the install manifest (and mcp ownership) still exists.
+    doMcpLocal(root)
     const result = uninstallHarness({ projectRoot: root, yes: flags.yes })
     for (const file of result.removable) {
       console.log(`  ${flags.yes ? 'removed' : 'would remove'}: ${file}`)
     }
     for (const file of result.modified) console.log(`  preserve modified: ${file}`)
     for (const file of result.missing) console.log(`  already missing: ${file}`)
+    for (const pattern of result.gitignoreRemoved) {
+      console.log(
+        `  ${flags.yes ? 'removed' : 'would remove'}: .gitignore entry ${pattern}`,
+      )
+    }
     if (result.manifestRemoved) console.log(`  manifest removed: ${result.manifest}`)
     else if (result.dryRun && result.removable.length + result.modified.length + result.missing.length) {
       console.log(`  would remove manifest: ${result.manifest}`)
     }
   }
   const doMcp = (location: McpLocation, root: string): void => {
+    if (location === 'local') {
+      doMcpLocal(root)
+      return
+    }
     const result = uninstallCursorMcp({
       projectRoot: root,
       location,
@@ -193,7 +222,6 @@ function runUninstallScope(scope: UninstallScope, flags: UninstallFlags): void {
     if (!repos.length) console.log('  (no registered repos — try --discover <dir>)')
     for (const root of repos) {
       doHarness(root)
-      doMcp('local', root)
     }
   }
   const doCli = (): void => {
@@ -207,7 +235,6 @@ function runUninstallScope(scope: UninstallScope, flags: UninstallFlags): void {
   switch (scope) {
     case 'repo':
       doHarness(cwd)
-      doMcp('local', cwd)
       break
     case 'all-repos':
       doRepos()
@@ -292,41 +319,99 @@ async function main(): Promise<void> {
     return
   }
   if (command === 'init') {
-    const location = arg('--location')
-    if (location !== undefined && location !== 'local' && location !== 'global') {
-      throw new Error('--location must be local | global')
-    }
-    const type = resolveType(arg('--type'))
-    const feAdapter =
-      type === 'be'
-        ? undefined
-        : resolveFeAdapter(arg('--fe-adapter') ?? arg('--adapter'))
-    const beAdapter =
-      type === 'fe'
-        ? undefined
-        : resolveBeAdapter(arg('--be-adapter') ?? arg('--adapter'))
     const root = resolveProjectRoot(arg('--project-root'))
-    const docsRoot = arg('--docs-root')
-    const mcp = installCursorMcp({
-      projectRoot: root,
-      type,
-      feAdapter,
-      beAdapter,
-      docsRoot,
-      location,
+    const interactive =
+      !has('--yes')
+      && Boolean(process.stdin.isTTY && process.stdout.isTTY)
+      && !arg('--target')
+      && !arg('--type')
+    const wireFlag = has('--codegraph')
+      ? true
+      : has('--no-codegraph')
+        ? false
+        : undefined
+    const withRaw = arg('--with')
+    const selection = await resolveInitWizard({
+      root,
+      requestedTarget: arg('--target'),
+      requestedType: arg('--type'),
+      requestedAdapter: arg('--adapter'),
+      requestedFeAdapter: arg('--fe-adapter'),
+      requestedBeAdapter: arg('--be-adapter'),
+      requestedDocsRoot: arg('--docs-root'),
+      requestedWith: withRaw === undefined
+        ? undefined
+        : withRaw.trim() === '' || withRaw.trim().toLowerCase() === 'none'
+          ? []
+          : withRaw.split(/[,\s]+/).filter(Boolean),
+      wireCodegraphFlag: wireFlag,
+      interactive,
     })
-    console.log(`${mcp.written ? 'wrote' : 'unchanged'}: ${mcp.path}`)
+
+    const agents = installAgents({
+      projectRoot: root,
+      type: selection.type,
+      targets: selection.targets,
+      feAdapter: selection.feAdapter,
+      beAdapter: selection.beAdapter,
+      docsRoot: selection.docsRoot,
+    })
+    console.log(
+      `Wired Codegenkit → ${agents.targets.join(', ') || '(none)'} (local)`,
+    )
+    for (const written of agents.written) {
+      console.log(`  ${written.agent}: ${written.path}`)
+    }
+
+    const ignoreEntries = generatedTargets({
+      projectRoot: root,
+      written: agents.written.map((entry) => entry.path),
+      harnessInstalled: true,
+    })
     const harness = installHarness({
       projectRoot: root,
-      type,
-      feAdapter,
-      beAdapter,
+      type: selection.type,
+      feAdapter: selection.feAdapter,
+      beAdapter: selection.beAdapter,
       force: has('--force'),
+      gitignoreEntries: ignoreEntries,
+      mcp: agents.mcp,
     })
     for (const file of harness.written) console.log(`  wrote: ${file}`)
     for (const file of harness.unchanged) console.log(`  unchanged: ${file}`)
     for (const file of harness.conflicts) console.log(`  conflict: ${file}`)
     for (const file of harness.stale) console.log(`  stale: ${file} (run codegenkit prune)`)
+    if (harness.gitignore.length) {
+      console.log(
+        `gitignore: claimed ${harness.gitignore.map((entry) => entry.pattern).join(', ')}`,
+      )
+    }
+
+    for (const optional of selection.withOptional) {
+      if (optional === 'ArtifactGraph') {
+        console.log(
+          '  optional: ArtifactGraph selected — run `artifactgraph init --yes` in this repo to register it',
+        )
+      }
+    }
+
+    if (selection.wireCodegraph) {
+      const codegraph = wirePlatformDnaCodegraph({
+        projectRoot: root,
+        filterKeys: arg('--codegraph-repos'),
+      })
+      if (codegraph.stdout) process.stdout.write(codegraph.stdout)
+      if (codegraph.skipped === 'not-initialized') {
+        console.log('  codegraph: skipped — run `platform-dna init` in this repo first')
+      } else if (codegraph.skipped === 'command-unavailable') {
+        console.log('  codegraph: skipped — `platform-dna` CLI is not available on PATH')
+      } else if (codegraph.status !== 0) {
+        const detail = codegraph.stderr.trim()
+        console.error(
+          `  codegraph: Platform DNA auto-wire failed${detail ? ` — ${detail}` : ''}`,
+        )
+      }
+    }
     return
   }
 

@@ -9,6 +9,9 @@ ArtifactGraph and CodeGraph are optional accelerators. Their absence or
 unavailability must never abort a Codegenkit-owned generation, dry-run,
 validation, or review.
 
+Full cross-repo routing (architecture → Hubdocs, IR → pointer roots, symbols →
+per-repo `codegraph-<key>`) lives in `cross-repo-index-routing.mdc`.
+
 ## Docs registry hub
 
 - FE reads canonical IR/registries from the member-selected docs repo through
@@ -19,7 +22,11 @@ validation, or review.
 - Use ArtifactGraph only for local allowlist/tag hints. Missing local
   ArtifactGraph never changes where Codegenkit reads canonical docs input.
 - Hubdocs, when installed as a consumer, uses its separate `HUBDOCS_ROOT`
-  pointer for ID/path queries.
+  pointer for architecture ID/path queries — never CodeGraph for C4.
+- CodeGraph, when used, must be the Platform DNA-wired `codegraph-<repo-key>`
+  for that checkout. Codegenkit never writes those MCP entries itself. Missing
+  or unindexed checkouts fall back and emit telemetry; never invent a graph or
+  `codegraph init` a workspace parent.
 
 For each optional integration that cannot be used:
 

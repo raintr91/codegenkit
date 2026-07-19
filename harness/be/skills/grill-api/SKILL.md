@@ -20,11 +20,13 @@ Check:
 ## Accelerators (optional)
 
 ```text
-if ArtifactGraph available: contract/tag/parity hints
+if ArtifactGraph available: local contract/tag/parity hints only
 else: scoped contract-to-code comparison
 
-if CodeGraph available: callers/routes/jobs/listeners
+if codegraph-<repo-key> for this checkout: callers/routes/jobs/listeners
 else: targeted repository search
+
+architecture IDs / C4 → Hubdocs (HUBDOCS_ROOT), never CodeGraph
 ```
 
 Missing accelerators never block the grill. Complete each scoped model or

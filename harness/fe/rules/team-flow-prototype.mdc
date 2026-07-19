@@ -15,7 +15,8 @@ Active: `/prototype` · `/grill-prototype` — **một** command / session.
 
 Prerequisite: member-configured `CODEGENKIT_DOCS_ROOT` points to the grilled
 docs registry hub → `pnpm portal:gen:dry --id …` OK. Never infer a sibling docs
-checkout; local ArtifactGraph is not the docs bridge.
+checkout; local ArtifactGraph is not the docs bridge. Architecture IDs →
+Hubdocs (`HUBDOCS_ROOT`); never CodeGraph for C4/architecture.
 
 ## Thứ tự
 

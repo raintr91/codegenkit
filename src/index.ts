@@ -6,6 +6,7 @@ export {
   pruneHarness,
   harnessStatus,
   manifestFile,
+  readInstallManifest,
   uninstallHarness,
   BE_SKILLS,
   FE_SKILLS,
@@ -32,6 +33,28 @@ export {
   type CursorMcpUninstallResult,
   type McpLocation,
 } from './install/cursor-mcp.js'
+export {
+  AGENT_IDS,
+  AGENT_LABEL,
+  agentConfigPath,
+  detectAgents,
+  installAgents,
+  parseAgentTargets,
+  uninstallAgents,
+  type AgentId,
+  type InstallAgentsResult,
+} from './install/agents.js'
+export {
+  canonicalGitignorePattern,
+  ensureGitignoreEntries,
+  generatedTargets,
+  ignorePatternForLocalPath,
+  mergeOwnedGitignore,
+  removeGitignoreEntries,
+  type OwnedGitignoreEntry,
+} from './install/gitignore.js'
+export { resolveInitWizard, type InitWizardSelection } from './install/init-wizard.js'
+export { wirePlatformDnaCodegraph } from './install/platform-dna.js'
 export {
   resolveAdapter,
   resolveBeAdapter,

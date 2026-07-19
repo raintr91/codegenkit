@@ -29,6 +29,14 @@ codegenkit api-gen --adapter=dotnet-integration -- --spec ir/spec.yaml
 codegenkit api-registry --adapter=dotnet-integration
 ```
 
+## Route
+
+Architecture/C4 → Hubdocs (`HUBDOCS_ROOT`); IR via explicit `--spec` /
+`CODEGENKIT_DOCS_ROOT` when configured — never ArtifactGraph as the docs
+bridge. This-repo conventions → local CodeGraph if present; other repo X →
+only Platform DNA-wired `codegraph-<key>`. ArtifactGraph = local allowlist
+hints only.
+
 The selected backend repository is the only write target. Never infer a sibling
 docs hub or frontend checkout.
 
@@ -59,7 +67,8 @@ warns and uses entity-local CRUD defaults.
 if ArtifactGraph available: allowlist/recommend API generation
 else: execute Codegenkit adapter directly
 
-if CodeGraph available: inspect existing module conventions/callers
+if CodeGraph available for this checkout (`codegraph-<key>`): inspect existing module conventions/callers
+else: targeted repository search — never a workspace-parent graph
 else: targeted repository search and reads
 ```
 
