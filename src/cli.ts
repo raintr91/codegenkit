@@ -382,6 +382,7 @@ async function main(): Promise<void> {
     })
     for (const file of harness.written) console.log(`  wrote: ${file}`)
     for (const file of harness.unchanged) console.log(`  unchanged: ${file}`)
+    for (const file of harness.skipped) console.log(`  skipped: ${file}`)
     for (const file of harness.conflicts) console.log(`  conflict: ${file}`)
     for (const file of harness.stale) console.log(`  stale: ${file} (run codegenkit prune)`)
     if (harness.gitignore.length) {

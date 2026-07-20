@@ -96,6 +96,7 @@ export interface HarnessInstallResult {
   written: string[]
   unchanged: string[]
   conflicts: string[]
+  skipped: string[]
   stale: string[]
   gitignore: OwnedGitignoreEntry[]
 }
@@ -385,9 +386,10 @@ export function installHarness(opts: {
   const result: HarnessInstallResult = {
     written: [],
     unchanged: [],
-    conflicts: [],
-    stale: [],
-    gitignore: [],
+    conflicts: [] as string[],
+    skipped: [] as string[],
+    stale: [] as string[],
+    gitignore: [] as string[],
   }
   const files: InstallManifest['files'] = {}
   const sources = managedSources(opts.type, adapters)
@@ -408,6 +410,15 @@ export function installHarness(opts: {
         const current = readFileSync(target, 'utf8')
         if (current === content) {
           result.unchanged.push(target)
+          continue
+        }
+        // Shared config skills can overlap across toolkits; skip instead of conflict if already present
+        if (
+          targetRel.includes('configure-repo-maps') ||
+          targetRel.includes('legacy-platform') ||
+          targetRel.includes('configure-legacy-')
+        ) {
+          result.skipped.push(target)
           continue
         }
         const safe = previous?.files[targetRel]?.sha256 === hash(current)
