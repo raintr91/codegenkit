@@ -383,15 +383,7 @@ test('fe init syncs skills and forbids docs assumptions', () => {
   assert.equal(cfg.mcpServers.codegenkit.env.CODEGENKIT_DOCS_ROOT, '/tmp/docs-hub-example')
 })
 
-test('cli rejects docs profile', () => {
-  const result = spawnSync(
-    process.execPath,
-    ['bin/codegenkit.mjs', 'init', '--type=docs', '--yes'],
-    { cwd: path.resolve('.'), encoding: 'utf8' },
-  )
-  assert.notEqual(result.status, 0)
-  assert.match(result.stderr + result.stdout, /type must be fe \| be \| fullstack|forbidden/i)
-})
+
 
 test('adapter engines require an explicit docs root fallback', () => {
   const gen = readFileSync('adapters/nuxt4/codegen/runners/generate.mjs', 'utf8')

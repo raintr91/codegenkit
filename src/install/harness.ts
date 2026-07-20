@@ -300,7 +300,7 @@ function readManifest(root: string, allowIncompatible = false): InstallManifest 
   }
 }
 
-function profiles(type: CodegenType): Array<'fe' | 'be'> {
+function profiles(type: CodegenType): Array<'fe' | 'be' | 'docs'> {
   return type === 'fullstack' ? ['fe', 'be'] : [type]
 }
 

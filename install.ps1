@@ -1,6 +1,6 @@
 param(
   [string]$InstallDir = "$HOME\.codegenkit",
-  [string]$Ref = "v0.6.1",
+  [string]$Ref = "v0.6.0",
   [ValidateSet("fe", "be", "fullstack")]
   [string]$Type = "fe",
   [ValidateSet("nuxt4", "nextjs", "dotnet-line")]

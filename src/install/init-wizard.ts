@@ -114,6 +114,7 @@ export async function resolveInitWizard(opts: {
             { value: 'fe', name: 'Frontend (FE)' },
             { value: 'be', name: 'Backend (BE)' },
             { value: 'fullstack', name: 'Fullstack (FE + BE)' },
+            { value: 'docs', name: 'Docs (OpenAPI)' },
           ],
         })
       : resolveType()
@@ -136,13 +137,13 @@ export async function resolveInitWizard(opts: {
         : resolveFeAdapter()
   }
 
-  if (type === 'be' || type === 'fullstack') {
-    const requested = opts.requestedBeAdapter ?? (type === 'be' ? opts.requestedAdapter : undefined)
+  if (type === 'be' || type === 'fullstack' || type === 'docs') {
+    const requested = opts.requestedBeAdapter ?? (type === 'be' || type === 'docs' ? opts.requestedAdapter : undefined)
     beAdapter = requested
       ? resolveBeAdapter(requested)
       : opts.interactive
         ? await prompts.select({
-            message: 'Select the BE adapter:',
+            message: 'Select the BE adapter (technology):',
             choices: BE_ADAPTERS.map((value) => ({
               value,
               name: BE_ADAPTER_NAMES[value],

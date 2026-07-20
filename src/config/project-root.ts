@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const pkgRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
-export type CodegenType = 'fe' | 'be' | 'fullstack'
+export type CodegenType = 'fe' | 'be' | 'fullstack' | 'docs'
 export type FeAdapterId = 'nuxt4' | 'nextjs' | 'dotnet-line'
 export type BeAdapterId = 'fastapi' | 'laravel' | 'dotnet-integration' | 'nestjs'
 export type AdapterId = FeAdapterId | BeAdapterId
@@ -26,8 +26,8 @@ export function resolveProjectRoot(explicit?: string): string {
 
 export function resolveType(type?: string): CodegenType {
   const value = type ?? process.env.CODEGENKIT_TYPE ?? 'fe'
-  if (!['fe', 'be', 'fullstack'].includes(value)) {
-    throw new Error('--type must be fe | be | fullstack (docs/tests are forbidden)')
+  if (!['fe', 'be', 'fullstack', 'docs'].includes(value)) {
+    throw new Error('--type must be fe | be | fullstack | docs (tests are forbidden)')
   }
   return value as CodegenType
 }

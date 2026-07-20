@@ -11,6 +11,7 @@ export function parseArgs(argv) {
     else if (arg === '--write-spec') options.writeSpec = true
     else if (arg === '--plan-only') options.execute = false
     else if (arg === '--force') options.force = true
+    else if (arg === '--openapi') options.openapi = true
     else if (arg === '--spec') options.spec = argv[++i]
     else if (!arg.startsWith('-') && !options.spec) options.spec = arg
   }
