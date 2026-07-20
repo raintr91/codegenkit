@@ -133,7 +133,12 @@ export function runBeEngine(opts: {
     const normalized = argv.filter(
       (value) => value !== '--dry-run' && value !== '--dry',
     )
-    if (!normalized.includes('dry') && !normalized.includes('write') && !normalized.includes('registry')) {
+    if (
+      !normalized.includes('dry') &&
+      !normalized.includes('write') &&
+      !normalized.includes('registry') &&
+      !normalized.includes('openapi')
+    ) {
       normalized.unshift(opts.dryRun ? 'dry' : 'write')
     }
     for (const python of pythonExecutables(opts.projectRoot)) {
@@ -160,19 +165,47 @@ export function runBeEngine(opts: {
     }
   }
 
-  const scope =
-    kind === 'unitgen' || kind === 'unit-registry' ? 'unitgen' : 'codegen'
-  const script =
-    kind === 'registry' || kind === 'unit-registry'
-      ? 'validate-registry.mjs'
-      : 'generate.mjs'
+  if (opts.adapter === 'nestjs') {
+    const scope =
+      kind === 'unitgen' || kind === 'unit-registry' ? 'nest-unitgen' : 'nestgen'
+    const script =
+      kind === 'registry' || kind === 'unit-registry'
+        ? 'validate-registry.mjs'
+        : 'generate.mjs'
+    const engine = path.join(
+      packageRoot(),
+      'adapters',
+      'nestjs',
+      scope,
+      'runners',
+      script,
+    )
+    return resultOf(
+      spawnSync(process.execPath, [engine, ...argv], {
+        cwd: opts.projectRoot,
+        encoding: 'utf8',
+        env,
+      }),
+    )
+  }
+
+  // Laravel unitgen / unit-registry: PHP engine synced into src/.codegenkit/
+  if (kind === 'unitgen' || kind === 'unit-registry') {
+    return runLaravelPhpUnitgen({
+      projectRoot: opts.projectRoot,
+      kind,
+      argv,
+      env,
+    })
+  }
+
   const engine = path.join(
     packageRoot(),
     'adapters',
     'laravel',
-    scope,
+    'codegen',
     'runners',
-    script,
+    kind === 'registry' ? 'validate-registry.mjs' : 'generate.mjs',
   )
   return resultOf(
     spawnSync(process.execPath, [engine, ...argv], {
@@ -181,4 +214,84 @@ export function runBeEngine(opts: {
       env,
     }),
   )
+}
+
+function resolveLaravelAppRoot(projectRoot: string): string | null {
+  const candidates = [projectRoot, path.join(projectRoot, 'src')]
+  for (const candidate of candidates) {
+    if (
+      existsSync(path.join(candidate, 'artisan')) &&
+      existsSync(path.join(candidate, 'composer.json'))
+    ) {
+      return candidate
+    }
+  }
+  return null
+}
+
+function resolveLaravelPhpEngine(projectRoot: string): {
+  script: string
+  cwd: string
+} | null {
+  const laravelRoot = resolveLaravelAppRoot(projectRoot)
+  const synced = path.join(projectRoot, 'src', '.codegenkit', 'bin')
+  const kitFallback = path.join(
+    packageRoot(),
+    'adapters',
+    'laravel',
+    'php',
+    'bin',
+  )
+  const binDir = existsSync(path.join(synced, 'unit-gen.php'))
+    ? synced
+    : existsSync(path.join(kitFallback, 'unit-gen.php'))
+      ? kitFallback
+      : null
+  if (!binDir) return null
+  return {
+    script: binDir,
+    cwd: laravelRoot ?? projectRoot,
+  }
+}
+
+function runLaravelPhpUnitgen(opts: {
+  projectRoot: string
+  kind: 'unitgen' | 'unit-registry'
+  argv: string[]
+  env: NodeJS.ProcessEnv
+}): EngineResult {
+  const resolved = resolveLaravelPhpEngine(opts.projectRoot)
+  if (!resolved) {
+    return {
+      status: 1,
+      stdout: '',
+      stderr:
+        'Laravel PHP unitgen not found. Run `codegenkit init --type=be --adapter=laravel` to sync src/.codegenkit/, or ensure adapters/laravel/php exists in the toolkit.\n',
+    }
+  }
+  const scriptName =
+    opts.kind === 'unit-registry' ? 'validate-registry.php' : 'unit-gen.php'
+  const script = path.join(resolved.script, scriptName)
+  if (!existsSync(script)) {
+    return {
+      status: 1,
+      stdout: '',
+      stderr: `Missing PHP unitgen entry: ${script}\n`,
+    }
+  }
+  const php = process.env.CODEGENKIT_PHP || 'php'
+  const result = spawnSync(php, [script, ...opts.argv], {
+    cwd: opts.projectRoot,
+    encoding: 'utf8',
+    env: opts.env,
+  })
+  if ((result.error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT') {
+    return {
+      status: 1,
+      stdout: '',
+      stderr:
+        'No PHP runtime found; set CODEGENKIT_PHP or install php on PATH.\n',
+    }
+  }
+  return resultOf(result)
 }

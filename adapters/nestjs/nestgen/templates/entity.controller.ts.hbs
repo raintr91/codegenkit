@@ -1,0 +1,51 @@
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common'
+import { CommandBus, QueryBus } from '@nestjs/cqrs'
+
+{{#if wire.search}}
+import { Search{{entityPascal}}Query } from './queries/search-{{entityKebab}}.query'
+{{/if}}
+{{#if wire.create}}
+import { Create{{entityPascal}}Command } from './commands/create-{{entityKebab}}.command'
+{{/if}}
+{{#if wire.update}}
+import { Update{{entityPascal}}Command } from './commands/update-{{entityKebab}}.command'
+{{/if}}
+{{#if wire.delete}}
+import { Delete{{entityPascal}}Command } from './commands/delete-{{entityKebab}}.command'
+{{/if}}
+
+@Controller('{{searchPath}}')
+export class {{entityPascal}}Controller {
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly commandBus: CommandBus
+  ) {}
+
+{{#if wire.search}}
+  @Get()
+  search(@Query() query: Record<string, unknown>) {
+    return this.queryBus.execute(new Search{{entityPascal}}Query(query))
+  }
+{{/if}}
+
+{{#if wire.create}}
+  @Post()
+  create(@Body() body: Record<string, unknown>) {
+    return this.commandBus.execute(new Create{{entityPascal}}Command(body))
+  }
+{{/if}}
+
+{{#if wire.update}}
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    return this.commandBus.execute(new Update{{entityPascal}}Command(id, body))
+  }
+{{/if}}
+
+{{#if wire.delete}}
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.commandBus.execute(new Delete{{entityPascal}}Command(id))
+  }
+{{/if}}
+}

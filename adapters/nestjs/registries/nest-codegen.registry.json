@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "description": "Nest codegen tag registry — HBS templates for apps/api (CQRS).",
+  "profiles": {
+    "crud-standard": {
+      "defaultGenTags": ["#gen:module", "#gen:crud", "#gen:orm", "#gen:test-unit"]
+    },
+    "patch": {
+      "defaultGenTags": []
+    }
+  },
+  "genTags": {
+    "#gen:module": {
+      "layer": "module",
+      "template": "module.module.ts.hbs"
+    },
+    "#gen:crud": {
+      "layer": "controller",
+      "template": "entity.controller.ts.hbs"
+    },
+    "#gen:orm": {
+      "layer": "orm",
+      "template": "orm/typeorm.entity.ts.hbs"
+    },
+    "#gen:command-create": {
+      "layer": "command",
+      "template": "commands/create.handler.ts.hbs",
+      "when": "wire.create"
+    },
+    "#gen:command-update": {
+      "layer": "command",
+      "template": "commands/update.handler.ts.hbs",
+      "when": "wire.update"
+    },
+    "#gen:command-delete": {
+      "layer": "command",
+      "template": "commands/delete.handler.ts.hbs",
+      "when": "wire.delete"
+    }
+  }
+}

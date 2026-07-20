@@ -1,0 +1,49 @@
+<?php
+
+
+
+namespace Modules\Hotel\Tests\Unit\Http\Actions;
+
+
+
+use \Modules\Hotel\Http\Actions\HotelAction;
+
+use \App\Models\Tenant\Hotel;
+
+use Tests\Unit\Concerns\AssertsActionRelationshipKeys;
+
+use Tests\Unit\UnitTestCase;
+
+
+
+class HotelActionRelationshipsBehaviorTest extends UnitTestCase
+
+{
+
+    use AssertsActionRelationshipKeys;
+
+
+
+    public function test_model_defines_spec_relationships(): void
+
+    {
+
+        $this->assertModelDefinesRelationships(\App\Models\Tenant\Hotel::class, ['managers', 'rooms']);
+
+    }
+
+
+
+    public function test_action_uses_entity_model(): void
+
+    {
+
+        $action = new \Modules\Hotel\Http\Actions\HotelAction(new \App\Models\Tenant\Hotel());
+
+
+
+        $this->assertInstanceOf(\Modules\Hotel\Http\Actions\HotelAction::class, $action);
+
+    }
+
+}

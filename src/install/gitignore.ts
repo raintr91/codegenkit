@@ -38,6 +38,8 @@ export interface GeneratedTargetInput {
   written: string[]
   /** True when this run installed/updated the harness + `.codegenkit/` state. */
   harnessInstalled: boolean
+  /** When set to laravel, also claim the synced PHP unitgen tree. */
+  beAdapter?: string
 }
 
 const LEGACY_START = '# >>> codegenkit generated files'
@@ -186,6 +188,9 @@ export function ignorePatternForLocalPath(
   const rel = path.relative(path.resolve(projectRoot), path.resolve(cleaned))
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return undefined
   const posix = rel.split(path.sep).join('/')
+  if (posix === 'src/.codegenkit' || posix.startsWith('src/.codegenkit/')) {
+    return 'src/.codegenkit/'
+  }
   const top = posix.split('/')[0]
   if (!top) return undefined
 
@@ -223,6 +228,9 @@ export function generatedTargets(input: GeneratedTargetInput): OwnedGitignoreEnt
   if (input.harnessInstalled) {
     add('.cursor/', true)
     add('.codegenkit/', false)
+  }
+  if (input.beAdapter === 'laravel') {
+    add('src/.codegenkit/', false)
   }
 
   for (const file of input.written) {

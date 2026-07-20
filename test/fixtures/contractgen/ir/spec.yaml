@@ -1,0 +1,29 @@
+codegen:
+  entity: Hotel
+  module: Hotel
+entities:
+  - name: Hotel
+    table: hotels
+    fields:
+      - key: id
+        kind: scalar
+        type: integer
+        scopes: [response, persistence]
+      - key: name
+        kind: scalar
+        type: string
+        scopes: [form, response, persistence]
+      - key: managers
+        kind: relation
+        cardinality: many
+        target: User
+        scopes: [response]
+        contract:
+          read:
+            embed: [id, full_name]
+            includeOn: [list]
+          write:
+            mode: syncIds
+        persistence:
+          type: hasMany
+          orm: typeorm

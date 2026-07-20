@@ -207,6 +207,18 @@ test('product code paths are never claimed by generatedTargets', () => {
   assert.equal(patterns.some((p) => p.includes('generated')), false)
 })
 
+test('laravel be claims src/.codegenkit for PHP unitgen', () => {
+  const root = temp('laravel-php')
+  const entries = generatedTargets({
+    projectRoot: root,
+    written: [],
+    harnessInstalled: true,
+    beAdapter: 'laravel',
+  })
+  const patterns = entries.map((e) => canonicalGitignorePattern(e.pattern))
+  assert.ok(patterns.includes('src/.codegenkit'))
+})
+
 test('multi-toolkit .cursor survival: deinit keeps shared, removes exclusive', () => {
   const root = temp('shared-cursor')
   writeFileSync(

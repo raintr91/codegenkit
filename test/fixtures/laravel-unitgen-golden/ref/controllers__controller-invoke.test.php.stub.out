@@ -1,0 +1,34 @@
+<?php
+
+namespace Modules\Hotel\Tests\Feature\Http\Controllers;
+
+use \Modules\Hotel\Http\Controllers\HotelController;
+use \Modules\Hotel\Http\Actions\HotelAction;
+use \Modules\Hotel\Http\Queries\HotelQuery;
+use Modules\Hotel\Tests\Support\ModuleTestSupport;
+use Tests\Unit\UnitTestCase;
+
+class HotelControllerInvokeTest extends UnitTestCase
+{
+    use ModuleTestSupport;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->bind(
+            \Modules\Hotel\Http\Queries\HotelQuery::class,
+            fn () => $this->makeQueryDouble(\Modules\Hotel\Http\Queries\HotelQuery::class),
+        );
+        $this->app->bind(
+            \Modules\Hotel\Http\Actions\HotelAction::class,
+            fn () => $this->makeActionDouble(\Modules\Hotel\Http\Actions\HotelAction::class),
+        );
+    }
+
+    public function test_public_methods_are_invokable(): void
+    {
+        $controller = $this->app->make(\Modules\Hotel\Http\Controllers\HotelController::class);
+        $this->invokeAllControllerMethods($controller);
+    }
+}

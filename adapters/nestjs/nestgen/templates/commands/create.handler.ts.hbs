@@ -1,0 +1,34 @@
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+
+import { BaseWriteHandler } from '../../../../common/crud/base-write.handler'
+import { createTypeormWriteRepository } from '../../../../common/persistence/typeorm-write.repository'
+import { {{entityPascal}}Entity } from '../{{entityKebab}}.entity'
+import { {{entityPascal}}Resource } from '../{{entityKebab}}.resource'
+import { Create{{entityPascal}}Command } from './create-{{entityKebab}}.command'
+
+@CommandHandler(Create{{entityPascal}}Command)
+export class Create{{entityPascal}}Handler
+  extends BaseWriteHandler<{{entityPascal}}Entity>
+  implements ICommandHandler<Create{{entityPascal}}Command>
+{
+  protected repository: ReturnType<typeof createTypeormWriteRepository<{{entityPascal}}Entity>>
+
+  constructor(
+    @InjectRepository({{entityPascal}}Entity)
+    typeormRepo: Repository<{{entityPascal}}Entity>
+  ) {
+    super()
+    this.repository = createTypeormWriteRepository(typeormRepo)
+  }
+
+  protected async refresh(entity: {{entityPascal}}Entity) {
+    return entity
+  }
+
+  async execute(command: Create{{entityPascal}}Command) {
+    const entity = await this.create(command.dto, [])
+    return {{entityPascal}}Resource.toDto(entity)
+  }
+}

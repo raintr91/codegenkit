@@ -1,0 +1,38 @@
+import { Module } from '@nestjs/common'
+import { CqrsModule } from '@nestjs/cqrs'
+import { TypeOrmModule } from '@nestjs/typeorm'
+
+import { {{entityPascal}}Controller } from './{{entityKebab}}/{{entityKebab}}.controller'
+import { {{entityPascal}}Entity } from './{{entityKebab}}/{{entityKebab}}.entity'
+{{#if wire.search}}
+import { Search{{entityPascal}}Handler } from './{{entityKebab}}/queries/search-{{entityKebab}}.handler'
+{{/if}}
+{{#if wire.create}}
+import { Create{{entityPascal}}Handler } from './{{entityKebab}}/commands/create-{{entityKebab}}.handler'
+{{/if}}
+{{#if wire.update}}
+import { Update{{entityPascal}}Handler } from './{{entityKebab}}/commands/update-{{entityKebab}}.handler'
+{{/if}}
+{{#if wire.delete}}
+import { Delete{{entityPascal}}Handler } from './{{entityKebab}}/commands/delete-{{entityKebab}}.handler'
+{{/if}}
+
+@Module({
+  imports: [CqrsModule, TypeOrmModule.forFeature([{{entityPascal}}Entity])],
+  controllers: [{{entityPascal}}Controller],
+  providers: [
+{{#if wire.search}}
+    Search{{entityPascal}}Handler,
+{{/if}}
+{{#if wire.create}}
+    Create{{entityPascal}}Handler,
+{{/if}}
+{{#if wire.update}}
+    Update{{entityPascal}}Handler,
+{{/if}}
+{{#if wire.delete}}
+    Delete{{entityPascal}}Handler
+{{/if}}
+  ]
+})
+export class {{modulePascal}}Module {}

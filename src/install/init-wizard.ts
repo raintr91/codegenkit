@@ -22,7 +22,7 @@ import {
 } from './prompt.js'
 
 const FE_ADAPTERS: FeAdapterId[] = ['nuxt4', 'nextjs', 'dotnet-line']
-const BE_ADAPTERS: BeAdapterId[] = ['fastapi', 'laravel', 'dotnet-integration']
+const BE_ADAPTERS: BeAdapterId[] = ['fastapi', 'laravel', 'dotnet-integration', 'nestjs']
 
 const FE_ADAPTER_NAMES: Record<FeAdapterId, string> = {
   nuxt4: 'Nuxt 4',
@@ -34,6 +34,7 @@ const BE_ADAPTER_NAMES: Record<BeAdapterId, string> = {
   fastapi: 'FastAPI',
   laravel: 'Laravel',
   'dotnet-integration': '.NET Integration',
+  nestjs: 'NestJS',
 }
 
 export interface InitWizardPrompts {

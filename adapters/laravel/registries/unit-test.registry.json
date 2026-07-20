@@ -64,7 +64,7 @@
       "genTag": "module-test-support",
       "layer": "support",
       "phase": "enriched",
-      "template": "support/ModuleTestSupport.php.hbs",
+      "template": "support/ModuleTestSupport.php.stub",
       "output": "Modules/{module}/Tests/Support/ModuleTestSupport.php",
       "profiles": ["crud-standard", "patch"],
       "fallbackTag": "#needs-unit-test:support:ModuleTestSupport"
@@ -74,7 +74,7 @@
       "genTag": "request-validation-hooks",
       "layer": "request",
       "phase": "enriched",
-      "template": "requests/request-enriched.test.php.hbs",
+      "template": "requests/request-enriched.test.php.stub",
       "output": "Modules/{module}/Tests/Unit/Http/Requests/{requestClass}Test.php",
       "profiles": ["crud-standard", "patch"],
       "when": { "any": [{ "hasModuleRequests": true }] },
@@ -85,7 +85,7 @@
       "genTag": "controller-invoke",
       "layer": "controller-invoke",
       "phase": "enriched",
-      "template": "controllers/controller-invoke.test.php.hbs",
+      "template": "controllers/controller-invoke.test.php.stub",
       "output": "Modules/{module}/Tests/Feature/Http/Controllers/{entity}ControllerInvokeTest.php",
       "profiles": ["crud-standard", "patch"],
       "fallbackTag": "#needs-unit-test:controller-invoke:{entity}"
@@ -94,7 +94,7 @@
       "status": "implemented",
       "layer": "request",
       "phase": "behavioral",
-      "template": "requests/rules-keys.behavior.test.php.hbs",
+      "template": "requests/rules-keys.behavior.test.php.stub",
       "output": "Modules/{module}/Tests/Unit/Http/Requests/{entity}SearchRequestRulesKeysBehaviorTest.php",
       "profiles": ["crud-standard", "patch"],
       "when": { "any": [{ "wire": "search" }] },
@@ -104,7 +104,7 @@
       "status": "implemented",
       "layer": "request",
       "phase": "behavioral",
-      "template": "requests/default-per-page.behavior.test.php.hbs",
+      "template": "requests/default-per-page.behavior.test.php.stub",
       "output": "Modules/{module}/Tests/Unit/Http/Requests/{entity}SearchRequestDefaultPerPageBehaviorTest.php",
       "profiles": ["crud-standard", "patch"],
       "when": { "any": [{ "manualAction": "default-per-page" }] },
@@ -120,7 +120,7 @@
           { "entityScope": "bySession" }
         ]
       },
-      "template": "queries/chain-scope.behavior.test.php.hbs",
+      "template": "queries/chain-scope.behavior.test.php.stub",
       "output": "Modules/{module}/Tests/Unit/Http/Queries/{entity}QueryChainScopeBehaviorTest.php",
       "fallbackTag": "#needs-unit-test:query:{entity}:chain-scope"
     },
@@ -134,7 +134,7 @@
           { "hasRelationships": true }
         ]
       },
-      "template": "actions/relationship-sync.behavior.test.php.hbs",
+      "template": "actions/relationship-sync.behavior.test.php.stub",
       "output": "Modules/{module}/Tests/Unit/Http/Actions/{entity}ActionRelationshipsBehaviorTest.php",
       "fallbackTag": "#needs-unit-test:action:{entity}:relationships"
     },
@@ -142,7 +142,7 @@
       "status": "implemented",
       "layer": "resource",
       "phase": "behavioral",
-      "template": "resources/openapi-shape.behavior.test.php.hbs",
+      "template": "resources/openapi-shape.behavior.test.php.stub",
       "output": "Modules/{module}/Tests/Unit/Http/Resources/{entity}ResourceOpenApiShapeBehaviorTest.php",
       "profiles": ["crud-standard", "patch"],
       "fallbackTag": "#needs-unit-test:resource:{entity}:openapi-shape"
@@ -152,7 +152,7 @@
       "layer": "resource",
       "phase": "behavioral",
       "when": { "any": [{ "manualAction": "nested-managers-resource" }] },
-      "template": "resources/nested-relations.behavior.test.php.hbs",
+      "template": "resources/nested-relations.behavior.test.php.stub",
       "output": "Modules/{module}/Tests/Unit/Http/Resources/{entity}ResourceNestedRelationsBehaviorTest.php",
       "fallbackTag": "#needs-unit-test:resource:{entity}:nested-managers"
     },

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "description": "Contract field registry — kinds, scopes, and Zod mapping for contract:gen.",
+  "fieldKinds": ["scalar", "fk", "relation"],
+  "scopes": ["form", "response", "persistence", "be"],
+  "scalarTypes": {
+    "integer": { "zod": "fields.id", "note": "Use fields.id for ids; z.number() for other ints" },
+    "number": { "zod": "z.number()" },
+    "string": { "zod": "fields.optionalNullableString" },
+    "boolean": { "zod": "z.boolean()" },
+    "datetime": { "zod": "fields.createdAt" }
+  },
+  "persistenceTypes": ["belongsTo", "hasMany", "hasOne", "belongsToMany"],
+  "ormTargets": ["typeorm", "prisma"],
+  "writeModes": ["syncIds", "nestedCreate", "fkOnly"],
+  "outputs": {
+    "readSchema": "{entityPascal}ReadSchema",
+    "writeSchema": "{entityPascal}WriteSchema",
+    "embedSchema": "{namePascal}EmbedSchema",
+    "relationshipsMeta": "{entityKebab}.relationships.meta.ts"
+  }
+}

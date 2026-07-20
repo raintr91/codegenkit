@@ -14,7 +14,7 @@ export async function readCodegenManifest(featureDir) {
     raw = await readFile(manifestPath, 'utf8')
   } catch {
     throw new Error(
-      `Missing ${path.join(featureDir, 'generated', MANIFEST_NAME)} — run pnpm portal:gen --id … first (manifest under docs hub …/code/{W-…}/generated/)`
+      `Missing ${path.join(featureDir, 'generated', MANIFEST_NAME)} — run codegenkit gen --id … first (manifest under docs hub …/code/{W-…}/generated/)`
     )
   }
 

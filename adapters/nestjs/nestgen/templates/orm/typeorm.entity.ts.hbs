@@ -1,0 +1,20 @@
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
+{{#if relationshipsMetaImport}}
+// Relation sync: {{relationshipsMetaImport}}
+{{/if}}
+
+@Entity('{{tableName}}')
+export class {{entityPascal}}Entity {
+{{#each ormColumns}}
+{{#if comment}}  // {{comment}}
+{{/if}}
+{{#each decorators}}
+  {{{this}}}
+{{/each}}
+  {{property}}!: {{tsType}}
+
+{{/each}}
+{{#each ormRelations}}
+  // {{type}} → {{target}} ({{field}}) — wire repository + syncRelation
+{{/each}}
+}

@@ -67,7 +67,7 @@ export function renderUnitHandoffMarkdown(ctx, written, skipped, needsUnit) {
     '',
     `Generated from \`${ctx.specFile}\` (profile: **${ctx.profile}**, phase: **${ctx.phase}**).`,
     '',
-    'Prerequisite: `pnpm portal:gen` + `generated/codegen.manifest.json`.',
+    'Prerequisite: `codegenkit gen` + `generated/codegen.manifest.json`.',
     '',
     '## Test files',
     '',

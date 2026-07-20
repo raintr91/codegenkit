@@ -113,6 +113,8 @@ export interface HarnessStatus {
   missing: string[]
   modified: string[]
   stale: string[]
+  /** Non-manifest leftovers (e.g. product-root contractgen/) */
+  warnings: string[]
   gitignore: GitignoreEntryStatus[]
   mcp: McpAgentStatus[]
   compat: 'ok' | 'warn' | 'fail'
@@ -138,6 +140,18 @@ export interface HarnessUninstallResult {
 
 function hash(content: string | Buffer): string {
   return createHash('sha256').update(content).digest('hex')
+}
+
+/** Product-root engine trees retired in favor of toolkit package engines. */
+function legacyProductEngineRoots(root: string): string[] {
+  const legacy = ['contractgen']
+  return legacy
+    .map((name) => path.join(root, name))
+    .filter((candidate) => {
+      if (!existsSync(candidate)) return false
+      // Treat as toolkit leftover when it still has runners/ (old product engine).
+      return existsSync(path.join(candidate, 'runners'))
+    })
 }
 
 function lexists(file: string): boolean {
@@ -306,7 +320,8 @@ function managedSources(
     })),
   ]
   for (const adapter of [
-    ...(selectedProfiles.includes('fe') && adapters.fe === 'dotnet-line'
+    ...(selectedProfiles.includes('fe') &&
+    (adapters.fe === 'dotnet-line' || adapters.fe === 'nextjs')
       ? [adapters.fe]
       : []),
     ...(selectedProfiles.includes('be') && adapters.be ? [adapters.be] : []),
@@ -316,6 +331,16 @@ function managedSources(
       sources.push({
         root: registryRoot,
         targetPrefix: 'registries',
+      })
+    }
+  }
+  // Laravel PHP unitgen engine → product src/.codegenkit/ (gitignored, regenerated).
+  if (selectedProfiles.includes('be') && adapters.be === 'laravel') {
+    const phpRoot = path.join(packageRoot(), 'adapters', 'laravel', 'php')
+    if (existsSync(phpRoot)) {
+      sources.push({
+        root: phpRoot,
+        targetPrefix: 'src/.codegenkit',
       })
     }
   }
@@ -467,6 +492,9 @@ export function harnessStatus(projectRoot?: string): HarnessStatus {
       missing,
       modified,
       stale,
+      warnings: legacyProductEngineRoots(root).map(
+        (dir) => `legacy product engine present: ${path.relative(root, dir) || dir} (run codegenkit prune --yes)`,
+      ),
       gitignore: [],
       mcp: [],
       compat: 'warn',
@@ -491,6 +519,11 @@ export function harnessStatus(projectRoot?: string): HarnessStatus {
     else modified.push(target)
   }
 
+  const warnings = legacyProductEngineRoots(root).map(
+    (dir) =>
+      `legacy product engine present: ${path.relative(root, dir) || dir} (run codegenkit prune --yes)`,
+  )
+
   return {
     projectRoot: root,
     packageVersion: currentPackageVersion,
@@ -504,11 +537,12 @@ export function harnessStatus(projectRoot?: string): HarnessStatus {
     missing,
     modified,
     stale,
+    warnings,
     gitignore: gitignoreStatus(root, previous),
     mcp: mcpStatus(root, previous),
     compat: !compatibleApis
       ? 'fail'
-      : previous.packageVersion === currentPackageVersion
+      : previous.packageVersion === currentPackageVersion && warnings.length === 0
         ? 'ok'
         : 'warn',
   }
@@ -590,6 +624,15 @@ export function pruneHarness(opts: {
   const root = path.resolve(opts.projectRoot ?? process.cwd())
   const previous = readManifest(root)
   const result: PruneResult = { removable: [], modified: [], removed: [] }
+
+  for (const legacy of legacyProductEngineRoots(root)) {
+    result.removable.push(legacy)
+    if (opts.yes) {
+      rmSync(legacy, { recursive: true, force: true })
+      result.removed.push(legacy)
+    }
+  }
+
   if (!previous) return result
 
   const selectedTargets = currentTargets(previous)
@@ -608,7 +651,7 @@ export function pruneHarness(opts: {
     }
   }
 
-  if (opts.yes && result.removed.length) {
+  if (opts.yes && result.removed.length && previous) {
     for (const target of result.removed) {
       const targetRel = path.relative(root, target).split(path.sep).join('/')
       delete previous.files[targetRel]

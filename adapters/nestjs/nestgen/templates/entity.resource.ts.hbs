@@ -1,0 +1,45 @@
+import { BaseResource } from '../../../common/crud/base-resource'
+
+type {{entityPascal}}Row = {
+  id: number
+{{#each resourceScalars}}
+  {{key}}?: {{tsType}}
+{{/each}}
+{{#each resourceRelations}}
+  {{key}}?: Array<{
+{{#each embed}}
+    {{key}}?: {{tsType}}
+{{/each}}
+  }>
+{{/each}}
+  created_at?: string | Date | null
+  updated_at?: string | Date | null
+}
+
+export class {{entityPascal}}Resource extends BaseResource<{{entityPascal}}Row> {
+  fields(entity: {{entityPascal}}Row) {
+    return {
+{{#each resourceScalars}}
+      {{key}}: entity.{{key}} ?? null{{#unless @last}},{{/unless}}
+{{/each}}
+    }
+  }
+
+  relations(entity: {{entityPascal}}Row) {
+    const out: Record<string, unknown> = {}
+{{#each resourceRelations}}
+    if (entity.{{key}}) {
+      out.{{key}} = entity.{{key}}.map((row) => ({
+{{#each embed}}
+        {{key}}: row.{{key}} ?? null{{#unless @last}},{{/unless}}
+{{/each}}
+      }))
+    }
+{{/each}}
+    return out
+  }
+
+  static toDto(entity: {{entityPascal}}Row) {
+    return new {{entityPascal}}Resource().toDto(entity)
+  }
+}

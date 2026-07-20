@@ -40,7 +40,8 @@ codegenkit gen --adapter=dotnet-line -- --spec ir/spec.yaml
 codegenkit registry --adapter=dotnet-line
 ```
 
-Compatibility shims on FE repos may still expose `pnpm portal:gen*`; they must call Codegenkit.
+Do not rely on product `package.json` wrappers. Codegenkit `init` does not
+sync historical `portal:gen*` scripts — call the CLI above directly.
 
 `dotnet-line` requires the .NET 8 SDK (`CODEGENKIT_DOTNET`, then `dotnet`) and
 is limited to the pilot-specific `kiosk-check-in` profile. Its main pass also

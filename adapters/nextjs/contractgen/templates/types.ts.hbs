@@ -1,0 +1,15 @@
+import type { z } from 'zod'
+
+import {
+  {{entityPascal}}ListResponseSchema,
+  {{entityPascal}}ReadSchema
+} from './{{entityKebab}}.read.schema.js'
+{{#if hasWrite}}
+import type { {{entityPascal}}WriteSchema } from './{{entityKebab}}.write.schema.js'
+{{/if}}
+
+export type {{entityPascal}} = z.infer<typeof {{entityPascal}}ReadSchema>
+export type {{entityPascal}}ListResponse = z.infer<typeof {{entityPascal}}ListResponseSchema>
+{{#if hasWrite}}
+export type {{entityPascal}}CreateRequest = z.infer<typeof {{entityPascal}}WriteSchema>
+{{/if}}

@@ -81,3 +81,42 @@ export function runAdapterEngine(opts: {
     stderr: result.stderr ?? '',
   }
 }
+
+/** Next.js (and fullstack) FE↔BE contract schemas — lives under adapters/nextjs/contractgen. */
+export function runContractEngine(opts: {
+  projectRoot: string
+  docsRoot?: string
+  argv?: string[]
+  dryRun?: boolean
+  registry?: boolean
+}): EngineResult {
+  const argv = [...(opts.argv ?? [])]
+  if (opts.dryRun && !opts.registry && !argv.includes('--dry-run')) {
+    argv.push('--dry-run')
+  }
+  const env = {
+    ...process.env,
+    CODEGENKIT_ROOT: opts.projectRoot,
+    CODEGENKIT_ADAPTER: 'nextjs',
+  } as NodeJS.ProcessEnv
+  if (opts.docsRoot) env.CODEGENKIT_DOCS_ROOT = opts.docsRoot
+  const script = opts.registry ? 'validate-registry.mjs' : 'generate.mjs'
+  const engine = path.join(
+    packageRoot(),
+    'adapters',
+    'nextjs',
+    'contractgen',
+    'runners',
+    script,
+  )
+  const result = spawnSync(process.execPath, [engine, ...argv], {
+    cwd: opts.projectRoot,
+    encoding: 'utf8',
+    env,
+  })
+  return {
+    status: result.status,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+  }
+}

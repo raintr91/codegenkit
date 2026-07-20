@@ -1,0 +1,22 @@
+import { {{entityPascal}}Resource } from './{{entityKebab}}.resource'
+
+describe('{{entityPascal}}Resource', () => {
+  it('maps contract keys', () => {
+    const dto = {{entityPascal}}Resource.toDto({
+      id: 1,
+{{#each resourceScalars}}
+      {{key}}: 'A'{{#unless @last}},{{/unless}}
+{{/each}}
+{{#if resourceRelations.length}}{{#each resourceRelations}}
+      {{key}}: [{ {{#each embed}}{{key}}: {{#if (eq key 'id')}}2{{else}}'M'{{/if}}{{#unless @last}}, {{/unless}}{{/each}} }]{{#unless @last}},{{/unless}}
+{{/each}}{{/if}}
+    })
+    expect(dto.id).toBe(1)
+{{#each resourceScalars}}
+    expect(dto.{{key}}).toBe('A')
+{{/each}}
+{{#each resourceRelations}}
+    expect(dto.{{key}}).toEqual([{ {{#each embed}}{{key}}: {{#if (eq key 'id')}}2{{else}}'M'{{/if}}{{#unless @last}}, {{/unless}}{{/each}} }])
+{{/each}}
+  })
+})

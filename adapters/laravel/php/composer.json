@@ -1,0 +1,16 @@
+{
+  "name": "codegenkit/laravel-unitgen",
+  "description": "Codegenkit Laravel unit-test generator (synced into src/.codegenkit)",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Codegenkit\\Laravel\\UnitGen\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">=8.2"
+  },
+  "suggest": {
+    "symfony/yaml": "Required at product require-dev to parse backend specs"
+  }
+}

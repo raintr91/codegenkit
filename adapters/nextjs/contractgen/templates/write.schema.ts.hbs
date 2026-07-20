@@ -1,0 +1,11 @@
+import { z } from 'zod'
+
+import { fields } from '../common/fields.js'
+
+export const {{entityPascal}}WriteSchema = z.object({
+{{#each fields}}
+  {{key}}: {{{zodField this 'write'}}},
+{{/each}}
+})
+
+export const {{entityPascal}}CreateRequestSchema = {{entityPascal}}WriteSchema

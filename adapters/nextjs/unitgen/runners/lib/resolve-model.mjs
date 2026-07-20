@@ -23,6 +23,6 @@ export async function resolveModelPackagePath(root, entity) {
   }
 
   throw new Error(
-    `Model package missing for ${entity} — run pnpm contract:gen --spec <ir/spec.yaml> first`
+    `Model package missing for ${entity} — run codegenkit contract-gen --spec <ir/spec.yaml> first`
   )
 }

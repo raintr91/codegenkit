@@ -1,0 +1,32 @@
+import { Create{{entityPascal}}Handler } from './create-{{entityKebab}}.handler'
+import { Create{{entityPascal}}Command } from './create-{{entityKebab}}.command'
+import { {{entityPascal}}Entity } from '../{{entityKebab}}.entity'
+import { getRepositoryToken } from '@nestjs/typeorm'
+import { Test } from '@nestjs/testing'
+
+describe('Create{{entityPascal}}Handler', () => {
+  const mockRepo = {
+    create: jest.fn((row) => row),
+    save: jest.fn(async (row) => ({ id: 1, ...row })),
+    update: jest.fn(),
+    delete: jest.fn(),
+    findOneOrFail: jest.fn()
+  }
+
+  async function createHandler() {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        Create{{entityPascal}}Handler,
+        { provide: getRepositoryToken({{entityPascal}}Entity), useValue: mockRepo }
+      ]
+    }).compile()
+    return moduleRef.get(Create{{entityPascal}}Handler)
+  }
+
+  it('creates entity and returns dto', async () => {
+    const handler = await createHandler()
+    const result = await handler.execute(new Create{{entityPascal}}Command({ name: 'Pilot' }))
+    expect(result).toHaveProperty('id')
+    expect(mockRepo.save).toHaveBeenCalled()
+  })
+})

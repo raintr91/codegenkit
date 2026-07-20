@@ -32,7 +32,7 @@ import {
   removeLedger,
 } from './install/ledger.js'
 import { wirePlatformDnaCodegraph } from './install/platform-dna.js'
-import { runAdapterEngine } from './adapters/run.js'
+import { runAdapterEngine, runContractEngine } from './adapters/run.js'
 import { runBeEngine } from './adapters/run-be.js'
 import { validateCommonRegistry } from './registries/common.js'
 
@@ -68,10 +68,12 @@ function usage(): never {
   uninstall --scope=repo|all-repos|mcp-local|mcp-global|cli|all …
   gen|gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
   unit-gen|unit-gen:dry [--adapter=…] [--docs-root=…] [--project-root=…] -- …engine args
-  api-gen|api-gen:dry [--adapter=fastapi|laravel|dotnet-integration] [--project-root=…] -- --spec <path>
-  api-unit-gen|api-unit-gen:dry [--adapter=fastapi|laravel] [--project-root=…] -- --spec <path>
-  api-registry [--adapter=fastapi|laravel|dotnet-integration] [--project-root=…]
-  api-unit-registry [--adapter=fastapi|laravel] [--project-root=…]
+  api-gen|api-gen:dry [--adapter=fastapi|laravel|dotnet-integration|nestjs] [--project-root=…] -- --spec <path>
+  api-unit-gen|api-unit-gen:dry [--adapter=fastapi|laravel|nestjs] [--project-root=…] -- --spec <path>
+  api-registry [--adapter=fastapi|laravel|dotnet-integration|nestjs] [--project-root=…]
+  api-unit-registry [--adapter=fastapi|laravel|nestjs] [--project-root=…]
+  contract-gen|contract-gen:dry [--docs-root=…] [--project-root=…] -- --spec <path>
+  contract-registry [--project-root=…]
   registry|unit-registry [--adapter=…] [--project-root=…]
   common-registry [--project-root=…] [--registry <path>]
   version
@@ -367,6 +369,7 @@ async function main(): Promise<void> {
       projectRoot: root,
       written: agents.written.map((entry) => entry.path),
       harnessInstalled: true,
+      beAdapter: selection.beAdapter,
     })
     const harness = installHarness({
       projectRoot: root,
@@ -483,6 +486,26 @@ async function main(): Promise<void> {
         projectRoot: root,
         kind: command === 'api-registry' ? 'registry' : 'unit-registry',
         argv: passthrough(command),
+      }),
+    )
+  }
+  if (command === 'contract-gen' || command === 'contract-gen:dry') {
+    printResult(
+      runContractEngine({
+        projectRoot: root,
+        docsRoot,
+        argv: passthrough(command),
+        dryRun: command === 'contract-gen:dry' || has('--dry-run'),
+      }),
+    )
+  }
+  if (command === 'contract-registry') {
+    printResult(
+      runContractEngine({
+        projectRoot: root,
+        docsRoot,
+        argv: passthrough(command),
+        registry: true,
       }),
     )
   }

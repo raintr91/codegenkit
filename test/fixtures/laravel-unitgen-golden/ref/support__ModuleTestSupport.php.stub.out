@@ -1,0 +1,32 @@
+<?php
+
+namespace Modules\Hotel\Tests\Support;
+
+use \Modules\Hotel\Http\Requests\HotelSearchRequest;
+use \Modules\Hotel\Http\Controllers\HotelController;
+use Tests\Unit\Concerns\ExercisesRequestValidationHooks;
+use Tests\Unit\Concerns\InvokesControllerMethods;
+
+/**
+ * Thin module wiring for shared unit-test concerns (api:unit-gen).
+ */
+trait ModuleTestSupport
+{
+    use ExercisesRequestValidationHooks;
+    use InvokesControllerMethods;
+
+    protected function moduleBaseRequestClass(): ?string
+    {
+        return \Modules\Hotel\Http\Requests\HotelSearchRequest::class;
+    }
+
+    /**
+     * @return array<int, class-string>
+     */
+    protected function moduleControllerSkipClasses(): array
+    {
+        return [
+            \Modules\Hotel\Http\Controllers\HotelController::class,
+        ];
+    }
+}

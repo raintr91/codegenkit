@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Design vocabulary
 
-SSOT: `registries/design.registry.json` · validate with `pnpm portal:registry`.
+SSOT: `registries/design.registry.json` · validate with `codegenkit registry`.
 
 ## Hashtags (grill → `tags:`)
 
@@ -27,6 +27,6 @@ not assume a Nuxt `.vue` shell in a Next.js target or vice versa.
 
 1. BA bullet → `lookupAlias()` in registry
 2. Low confidence → ask member
-3. `pnpm portal:gen:dry --id …` must pass.
+3. `codegenkit gen:dry --id …` must pass.
 
 Do not invent component names outside the selected adapter registry.

@@ -1,0 +1,33 @@
+import { Search{{entityPascal}}Handler } from './search-{{entityKebab}}.handler'
+import { Search{{entityPascal}}Query } from './search-{{entityKebab}}.query'
+import { {{entityPascal}}Entity } from '../{{entityKebab}}.entity'
+import { getRepositoryToken } from '@nestjs/typeorm'
+import { Test } from '@nestjs/testing'
+
+describe('Search{{entityPascal}}Handler', () => {
+  const mockRepo = {
+    findAndCount: jest.fn().mockResolvedValue([[], 0])
+  }
+
+  beforeEach(async () => {
+    jest.clearAllMocks()
+  })
+
+  async function createHandler() {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        Search{{entityPascal}}Handler,
+        { provide: getRepositoryToken({{entityPascal}}Entity), useValue: mockRepo }
+      ]
+    }).compile()
+    return moduleRef.get(Search{{entityPascal}}Handler)
+  }
+
+  it('returns paginated envelope', async () => {
+    const handler = await createHandler()
+    const result = await handler.execute(new Search{{entityPascal}}Query({ page: 1, per_page: 10 }))
+    expect(result).toHaveProperty('data')
+    expect(result).toHaveProperty('meta')
+    expect(mockRepo.findAndCount).toHaveBeenCalled()
+  })
+})

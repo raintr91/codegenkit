@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "description": "Nest unit test codegen registry",
+  "patterns": {
+    "searchHandler": {
+      "when": "wire.search",
+      "template": "handlers/search.handler.spec.ts.hbs",
+      "output": "apps/api/src/modules/{moduleKebab}/{entityKebab}/queries/search-{entityKebab}.handler.spec.ts"
+    },
+    "createHandler": {
+      "when": "wire.create",
+      "template": "commands/create.handler.spec.ts.hbs",
+      "output": "apps/api/src/modules/{moduleKebab}/{entityKebab}/commands/create-{entityKebab}.handler.spec.ts"
+    },
+    "updateHandler": {
+      "when": "wire.update",
+      "template": "commands/update.handler.spec.ts.hbs",
+      "output": "apps/api/src/modules/{moduleKebab}/{entityKebab}/commands/update-{entityKebab}.handler.spec.ts"
+    },
+    "deleteHandler": {
+      "when": "wire.delete",
+      "template": "commands/delete.handler.spec.ts.hbs",
+      "output": "apps/api/src/modules/{moduleKebab}/{entityKebab}/commands/delete-{entityKebab}.handler.spec.ts"
+    },
+    "resource": {
+      "when": "always",
+      "template": "resource/entity.resource.spec.ts.hbs",
+      "output": "apps/api/src/modules/{moduleKebab}/{entityKebab}/{entityKebab}.resource.spec.ts"
+    }
+  }
+}

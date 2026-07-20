@@ -1,0 +1,32 @@
+import { Delete{{entityPascal}}Handler } from './delete-{{entityKebab}}.handler'
+import { Delete{{entityPascal}}Command } from './delete-{{entityKebab}}.command'
+import { {{entityPascal}}Entity } from '../{{entityKebab}}.entity'
+import { getRepositoryToken } from '@nestjs/typeorm'
+import { Test } from '@nestjs/testing'
+
+describe('Delete{{entityPascal}}Handler', () => {
+  const mockRepo = {
+    create: jest.fn(),
+    save: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn().mockResolvedValue({ affected: 1 }),
+    findOneOrFail: jest.fn()
+  }
+
+  async function createHandler() {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        Delete{{entityPascal}}Handler,
+        { provide: getRepositoryToken({{entityPascal}}Entity), useValue: mockRepo }
+      ]
+    }).compile()
+    return moduleRef.get(Delete{{entityPascal}}Handler)
+  }
+
+  it('deletes entity', async () => {
+    const handler = await createHandler()
+    const result = await handler.execute(new Delete{{entityPascal}}Command(1))
+    expect(result).toEqual({ success: true })
+    expect(mockRepo.delete).toHaveBeenCalledWith(1)
+  })
+})

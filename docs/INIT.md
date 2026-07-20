@@ -36,6 +36,11 @@ adapter's managed registry defaults under `registries/` (including the
 `.codegenkit/install-manifest.json`. Existing user-modified registries are
 reported as conflicts unless `--force` is explicit.
 
+`init` does **not** write or require product `package.json` scripts. FE/BE
+generation is invoked via the toolkit CLI (`codegenkit gen`, `unit-gen`,
+`api-gen`, `contract-gen`, …). Absent historical `portal:*` / `api:*` wrappers
+are fine.
+
 For FE, pass `--docs-root=/absolute/path/to/docs-hub`. Init stores the
 member-selected path as `CODEGENKIT_DOCS_ROOT`; this is the canonical bridge to
 docs IR/registries. ArtifactGraph in FE remains local-only and does not replace

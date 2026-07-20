@@ -15,7 +15,7 @@ symbols → Platform DNA-wired `codegraph-<key>`; ArtifactGraph local-only.
 ## `/unit`
 
 - Manifest-first: `unit.manifest.json` + `UNIT-HANDOFF.md`
-- Gọi `pnpm portal:unit-gen` khi thiếu smoke; xử lý `needsUnit[]` / `#needs-unit-test:*`
+- Gọi `codegenkit unit-gen` khi thiếu smoke; xử lý `needsUnit[]` / `#needs-unit-test:*`
 - Tách file test thiếu theo registry (1 source logic → 1 test file)
 - Logic only — **không** mount page/component; mock the selected adapter's
   transport and framework globals at the unit boundary.

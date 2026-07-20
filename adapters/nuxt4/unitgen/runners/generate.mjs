@@ -33,8 +33,8 @@ function parseArgs(argv) {
 
   if (!options.spec && !options.id) {
     throw new Error(
-      'Usage: pnpm portal:unit-gen --id W-AD-AUTH-001 [--dry-run] [--force] [--phase prototype|wire]\n' +
-        '       pnpm portal:unit-gen --spec <path-to-ir/spec.yaml> …',
+      'Usage: codegenkit unit-gen --id W-AD-AUTH-001 [--dry-run] [--force] [--phase prototype|wire]\n' +
+        '       codegenkit unit-gen --spec <path-to-ir/spec.yaml> …',
     )
   }
 

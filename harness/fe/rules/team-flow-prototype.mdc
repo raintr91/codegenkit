@@ -14,14 +14,14 @@ Active: `/prototype` · `/grill-prototype` — **một** command / session.
 | `/grill-prototype` | `.cursor/skills/grill-prototype/SKILL.md` |
 
 Prerequisite: member-configured `CODEGENKIT_DOCS_ROOT` points to the grilled
-docs registry hub → `pnpm portal:gen:dry --id …` OK. Never infer a sibling docs
+docs registry hub → `codegenkit gen:dry --id …` OK. Never infer a sibling docs
 checkout; local ArtifactGraph is not the docs bridge. Architecture IDs →
 Hubdocs (`HUBDOCS_ROOT`); never CodeGraph for C4/architecture.
 
 ## Thứ tự
 
 1. Quét `#needs-component` / custom-render tags — chỉ tạo component còn thiếu.
-2. `pnpm portal:gen --id W-…` (hoặc MCP `gen`) — đọc `…/code/{W-…}/generated/HANDOFF.md`.
+2. `codegenkit gen --id W-…` (hoặc MCP `gen`) — đọc `…/code/{W-…}/generated/HANDOFF.md`.
 3. Vá slot · auth bypass · gap; **không** sửa YAML business trên hub khi prototype.
 
 - Source: grill-approved hub `ir/spec.yaml`

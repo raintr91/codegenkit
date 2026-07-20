@@ -1,0 +1,34 @@
+<?php
+
+namespace Modules\Hotel\Tests\Unit\Http\Queries;
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Tests\Unit\Concerns\AssertsQuerySessionScope;
+use Tests\Unit\UnitTestCase;
+
+class HotelQueryChainScopeBehaviorTest extends UnitTestCase
+{
+    use AssertsQuerySessionScope;
+
+    public function test_query_can_apply_session_scope_column(): void
+    {
+        $column = 'session_id';
+
+        $builder = $this->makeScopedBuilder($column);
+
+        $this->assertNotEmpty($builder->getQuery()->wheres);
+        $this->assertQueryBuilderAppliesScope($builder, $column);
+    }
+
+    private function makeScopedBuilder(string $column): Builder
+    {
+        $model = new class extends Model {
+            protected $table = 'unit_test_scope';
+
+            public $timestamps = false;
+        };
+
+        return $model->newQuery()->where($column, 1);
+    }
+}

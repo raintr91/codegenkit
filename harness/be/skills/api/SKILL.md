@@ -7,7 +7,7 @@ disable-model-invocation: true
 # /api — Backend API
 
 **Owner:** Codegenkit (`--type=be`)  
-**Adapters:** `fastapi` · `laravel` · `dotnet-integration`
+**Adapters:** `fastapi` · `laravel` · `dotnet-integration` · `nestjs`
 
 ## Generate
 
@@ -24,9 +24,15 @@ codegenkit api-unit-gen:dry --adapter=laravel -- --spec /path/to/ir/spec.yaml
 codegenkit api-registry --adapter=laravel
 codegenkit api-unit-registry --adapter=laravel
 
-codegenkit api-gen:dry --adapter=dotnet-integration -- --spec ir/spec.yaml
-codegenkit api-gen --adapter=dotnet-integration -- --spec ir/spec.yaml
-codegenkit api-registry --adapter=dotnet-integration
+# After init, engine lives at src/.codegenkit/ (PHP only; requires symfony/yaml require-dev):
+# php src/.codegenkit/bin/unit-gen.php --spec … [--dry-run] [--force] [--phase all]
+
+codegenkit api-gen:dry --adapter=nestjs -- --spec /path/to/ir/spec.yaml
+codegenkit api-unit-gen:dry --adapter=nestjs -- --spec /path/to/ir/spec.yaml
+codegenkit api-registry --adapter=nestjs
+
+codegenkit contract-gen:dry -- --spec /path/to/ir/spec.yaml
+codegenkit contract-registry
 ```
 
 ## Route

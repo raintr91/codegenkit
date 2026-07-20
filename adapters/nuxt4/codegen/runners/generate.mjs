@@ -88,7 +88,7 @@ async function resolveSpecPaths(options) {
   const discovered = await listIrSpecFiles(IR_SPEC_GLOB_ROOT)
   if (!discovered.length) {
     throw new Error(
-      'No ir/spec.yaml. Prefer: pnpm portal:gen --id W-AD-AUTH-001|CMP-01\n' +
+      'No ir/spec.yaml. Prefer: codegenkit gen --id W-AD-AUTH-001|CMP-01\n' +
         'Or pass --spec <path> / set CODEGENKIT_DOCS_ROOT and split on docs hub.',
     )
   }

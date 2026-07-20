@@ -7,10 +7,10 @@ Generate 4-layer scaffold from feature `spec.yaml` (Handlebars templates).
 ## Usage
 
 ```bash
-pnpm portal:registry   # validate registries/design.registry.json
-pnpm portal:gen --spec docs/features/yaml/admin/hotel/list/ir/spec.yaml
-pnpm portal:gen:dry --spec docs/features/.../ir/spec.yaml
-pnpm portal:gen --spec ... --force
+codegenkit registry   # validate registries/design.registry.json
+codegenkit gen --spec docs/features/yaml/admin/hotel/list/ir/spec.yaml
+codegenkit gen:dry --spec docs/features/.../ir/spec.yaml
+codegenkit gen --spec ... --force
 ```
 
 ## Design registry
@@ -20,7 +20,7 @@ pnpm portal:gen --spec ... --force
 
 - shadcn/ui = canonical (`#ui: AlertDialog`)
 - List default shell: `#shell: DataListPage` (aliases: `DataListTable`, `common list`)
-- `portal:gen` resolves shell → list template (`page.vue.hbs` vs `page.custom.vue.hbs`)
+- `codegenkit gen` resolves shell → list template (`page.vue.hbs` vs `page.custom.vue.hbs`)
 - Unknown `#ui:` / `#widget:` → dry-run fails
 
 ## Spec requirements
@@ -47,7 +47,7 @@ tags:
 
 **Namespace collision:** `entity: hotel` + `module: chain-hotels` writes to `models/chain-hotel/`, not `models/hotel/` (admin). Explicit `codegen.namespace: chain-hotel` also works.
 
-**Lifecycle:** Khi ghi `pages/*.vue`, portal-gen cập nhật registry (`prototype`) + `pnpm portal:lifecycle sync`. Xóa: `pnpm portal:remove --spec <file>`. Doc: `docs/operational/PAGE-LIFECYCLE.md`.
+**Lifecycle:** Khi ghi `pages/*.vue`, codegenkit gen cập nhật registry (`prototype`) + `pnpm portal:lifecycle sync`. Xóa: `pnpm portal:remove --spec <file>`. Doc: `docs/operational/PAGE-LIFECYCLE.md`.
 
 ## Output
 

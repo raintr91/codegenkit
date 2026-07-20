@@ -1,0 +1,19 @@
+<?php
+
+namespace Modules\Hotel\Tests\Unit\Http\Requests;
+
+use \Modules\Hotel\Http\Requests\HotelSearchRequest;
+use Tests\Unit\Concerns\AssertsRequestRuleKeys;
+use Tests\Unit\UnitTestCase;
+
+class HotelSearchRequestRulesKeysBehaviorTest extends UnitTestCase
+{
+    use AssertsRequestRuleKeys;
+
+    public function test_search_request_rules_contain_spec_keys(): void
+    {
+        $request = new \Modules\Hotel\Http\Requests\HotelSearchRequest();
+
+        $this->assertRequestRulesContainKeys($request, ['page', 'per_page', 'name']);
+    }
+}

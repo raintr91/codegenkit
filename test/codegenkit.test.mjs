@@ -30,6 +30,7 @@ import {
 } from '../dist/config/project-root.js'
 import { installCursorMcp } from '../dist/install/cursor-mcp.js'
 import { runAdapterEngine } from '../dist/adapters/run.js'
+import { runContractEngine } from '../dist/adapters/run.js'
 import { runBeEngine } from '../dist/adapters/run-be.js'
 import { validateCommonRegistry } from '../dist/registries/common.js'
 import {
@@ -409,6 +410,12 @@ test('be init syncs API skills with Laravel adapter', () => {
   assert.equal(harness.conflicts.length, 0)
   assert.ok(existsSync(path.join(root, 'registries', 'codegen.registry.json')))
   assert.ok(existsSync(path.join(root, 'registries', 'unit-test.registry.json')))
+  assert.ok(existsSync(path.join(root, 'src', '.codegenkit', 'bin', 'unit-gen.php')))
+  assert.ok(
+    existsSync(
+      path.join(root, 'src', '.codegenkit', 'templates', 'support', 'ModuleTestSupport.php.stub'),
+    ),
+  )
   for (const skill of BE_SKILLS) {
     assert.ok(existsSync(path.join(root, '.cursor', 'skills', skill, 'SKILL.md')))
   }
@@ -420,6 +427,7 @@ test('be init syncs API skills with Laravel adapter', () => {
     readFileSync(path.join(root, '.codegenkit', 'install-manifest.json'), 'utf8'),
   )
   assert.equal(manifest.adapters.be, 'laravel')
+  assert.ok(manifest.files['src/.codegenkit/bin/unit-gen.php'])
   assert.equal(existsSync(path.join(root, 'platform-repos.json')), false)
 })
 
@@ -672,6 +680,7 @@ test('status reports missing installs and package compatibility', () => {
     missing: [],
     modified: [],
     stale: [],
+    warnings: [],
     gitignore: [],
     mcp: [],
     compat: 'warn',
@@ -989,4 +998,90 @@ test('installers pin the released tag and enforce lockfiles', () => {
     assert.match(script, /npm ci/)
     assert.doesNotMatch(script, /(?:REF:-main|Ref = "main")/)
   }
+})
+
+test('nextjs init syncs contract-field registry', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-nextjs-contract-'))
+  installHarness({ projectRoot: root, type: 'fe', feAdapter: 'nextjs' })
+  assert.ok(
+    existsSync(path.join(root, 'registries', 'contract-field.registry.json')),
+  )
+})
+
+test('contract-gen dry-run / force / registry / docs-root discovery', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-contract-'))
+  installHarness({ projectRoot: root, type: 'fe', feAdapter: 'nextjs' })
+
+  const docsRoot = path.join(root, 'docs-hub')
+  const irDir = path.join(docsRoot, 'product', 'components', 'CMP-01', 'code', 'W-01', 'ir')
+  mkdirSync(irDir, { recursive: true })
+  const spec = path.join(irDir, 'spec.yaml')
+  copyFileSync('test/fixtures/contractgen/ir/spec.yaml', spec)
+
+  const registry = runContractEngine({
+    projectRoot: root,
+    registry: true,
+  })
+  assert.equal(registry.status, 0, registry.stderr)
+  assert.match(registry.stdout, /validate: OK/)
+
+  const dry = runContractEngine({
+    projectRoot: root,
+    docsRoot,
+    argv: ['--spec', spec],
+    dryRun: true,
+  })
+  assert.equal(dry.status, 0, dry.stderr)
+  assert.match(dry.stdout, /\[contract-gen\] dry/)
+  assert.equal(existsSync(path.join(root, 'packages')), false)
+
+  const write = runContractEngine({
+    projectRoot: root,
+    argv: ['--spec', spec],
+  })
+  assert.equal(write.status, 0, write.stderr)
+  const readSchema = path.join(root, 'packages/models/src/hotel/hotel.read.schema.ts')
+  assert.ok(existsSync(readSchema))
+  assert.ok(
+    existsSync(path.join(path.dirname(path.dirname(spec)), 'generated', 'contract.manifest.json')),
+  )
+
+  const blocked = runContractEngine({
+    projectRoot: root,
+    argv: ['--spec', spec],
+  })
+  assert.equal(blocked.status, 0, blocked.stderr)
+  assert.match(blocked.stdout, /skipped/)
+
+  const forced = runContractEngine({
+    projectRoot: root,
+    argv: ['--spec', spec, '--force'],
+  })
+  assert.equal(forced.status, 0, forced.stderr)
+  assert.match(forced.stdout, /written/)
+
+  const discovered = runContractEngine({
+    projectRoot: root,
+    docsRoot,
+    dryRun: true,
+  })
+  assert.equal(discovered.status, 0, discovered.stderr)
+  assert.match(discovered.stdout, /\[contract-gen\] dry/)
+})
+
+test('status/prune removes legacy product-root contractgen', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-contract-legacy-'))
+  installHarness({ projectRoot: root, type: 'fe', feAdapter: 'nextjs' })
+  const legacy = path.join(root, 'contractgen', 'runners')
+  mkdirSync(legacy, { recursive: true })
+  writeFileSync(path.join(legacy, 'generate.mjs'), '// stale\n')
+  const status = harnessStatus(root)
+  assert.ok(status.warnings.some((w) => w.includes('contractgen')))
+  assert.equal(status.compat, 'warn')
+  const dry = pruneHarness({ projectRoot: root })
+  assert.ok(dry.removable.includes(path.join(root, 'contractgen')))
+  assert.ok(existsSync(path.join(root, 'contractgen')))
+  const yes = pruneHarness({ projectRoot: root, yes: true })
+  assert.ok(yes.removed.includes(path.join(root, 'contractgen')))
+  assert.equal(existsSync(path.join(root, 'contractgen')), false)
 })

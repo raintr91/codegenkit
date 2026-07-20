@@ -1,0 +1,22 @@
+import { z } from 'zod'
+
+import { fields } from '../common/fields.js'
+
+export const {{entityPascal}}ReadSchema = z.object({
+{{#each fields}}
+{{#if (eq kind 'relation')}}
+  {{key}}: {{{zodField this 'read'}}},
+{{else}}
+{{#unless (eq kind 'fk')}}
+  {{key}}: {{{zodField this 'read'}}},
+{{/unless}}
+{{/if}}
+{{/each}}
+})
+
+export const {{entityPascal}}ListSchema = z.array({{entityPascal}}ReadSchema)
+
+export const {{entityPascal}}ListResponseSchema = z.object({
+  items: {{entityPascal}}ListSchema,
+  total: z.number().optional()
+})

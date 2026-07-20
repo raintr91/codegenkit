@@ -1,0 +1,23 @@
+/**
+ * ORM-agnostic relationship metadata — consumed by nest:gen / CommandHandlers.
+ * Default ORM hint: typeorm (override per field with persistence.orm: prisma).
+ */
+export const {{entityPascal}}Relationships = {
+{{#each relationships}}
+  {{field}}: {
+    entity: '{{../entityPascal}}',
+    field: '{{field}}',
+    kind: '{{kind}}',
+    type: '{{type}}',
+    target: '{{target}}',
+    cardinality: '{{cardinality}}',
+    fkField: {{#if fkField}}'{{fkField}}'{{else}}null{{/if}},
+    pivot: {{#if pivot}}'{{pivot}}'{{else}}null{{/if}},
+    orm: '{{orm}}',
+    writable: {{writable}},
+    readEmbed: [{{#each readEmbed}}'{{this}}'{{#unless @last}}, {{/unless}}{{/each}}]
+  },
+{{/each}}
+} as const
+
+export type {{entityPascal}}RelationshipKey = keyof typeof {{entityPascal}}Relationships

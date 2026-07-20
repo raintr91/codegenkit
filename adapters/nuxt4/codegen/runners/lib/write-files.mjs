@@ -97,7 +97,7 @@ export function renderHandoffMarkdown(ctx, written, skipped) {
     '',
     '```bash',
     'bundlekit render / docs hub docs:render   # after spec edits',
-    'pnpm portal:gen --spec ... --force  # re-generate after /prototype components',
+    'codegenkit gen --spec ... --force  # re-generate after /prototype components',
     '```',
     '',
   )
