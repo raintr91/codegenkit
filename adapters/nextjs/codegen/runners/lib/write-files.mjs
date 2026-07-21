@@ -96,7 +96,7 @@ export function renderHandoffMarkdown(ctx, written, skipped) {
     '## Commands',
     '',
     '```bash',
-    'bundlekit render / docs hub docs:render   # after spec edits',
+    'docskit render / docs hub docs:render   # after spec edits',
     'codegenkit gen --spec ... --force  # re-generate after /prototype components',
     '```',
     '',

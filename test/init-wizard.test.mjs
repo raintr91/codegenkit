@@ -223,7 +223,7 @@ test('multi-toolkit .cursor survival: deinit keeps shared, removes exclusive', (
   const root = temp('shared-cursor')
   writeFileSync(
     path.join(root, '.gitignore'),
-    'node_modules/\n.cursor/\n.hubdocs/\n',
+    'node_modules/\n.cursor/\n.docskit/\n',
     'utf8',
   )
   mkdirSync(path.join(root, '.cursor'), { recursive: true })
@@ -231,7 +231,7 @@ test('multi-toolkit .cursor survival: deinit keeps shared, removes exclusive', (
     path.join(root, '.cursor', 'mcp.json'),
     `${JSON.stringify({
       mcpServers: {
-        hubdocs: { command: 'keep-me' },
+        docskit: { command: 'keep-me' },
       },
     })}\n`,
   )
@@ -262,11 +262,11 @@ test('multi-toolkit .cursor survival: deinit keeps shared, removes exclusive', (
   )
   const ignore = readFileSync(path.join(root, '.gitignore'), 'utf8')
   assert.match(ignore, /\.cursor\//)
-  assert.match(ignore, /\.hubdocs\//)
+  assert.match(ignore, /\.docskit\//)
   assert.doesNotMatch(ignore, /\.codegenkit\//)
   const mcp = JSON.parse(readFileSync(path.join(root, '.cursor', 'mcp.json'), 'utf8'))
   assert.equal(mcp.mcpServers.codegenkit, undefined)
-  assert.deepEqual(mcp.mcpServers.hubdocs, { command: 'keep-me' })
+  assert.deepEqual(mcp.mcpServers.docskit, { command: 'keep-me' })
 })
 
 test('modified MCP entry is preserved on uninstall', () => {

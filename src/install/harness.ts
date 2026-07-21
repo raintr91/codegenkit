@@ -440,7 +440,7 @@ export function installHarness(opts: {
   }
 
   // Merge ignore entries into .gitignore. Claim all requested toolkit targets
-  // (Hubdocs/Platform DNA shared-ownership contract): deinit only removes
+  // (Docskit/Platform DNA shared-ownership contract): deinit only removes
   // exclusive entries, so claiming a shared pattern already present is safe.
   const requestedIgnore = opts.gitignoreEntries ?? []
   const ensureResult = requestedIgnore.length

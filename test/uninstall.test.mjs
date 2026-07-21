@@ -87,7 +87,7 @@ test('Cursor MCP uninstall removes only the Codegenkit entry', () => {
   })
   const file = cursorMcpPath(root)
   const config = JSON.parse(readFileSync(file, 'utf8'))
-  config.mcpServers.hubdocs = { command: 'keep-me' }
+  config.mcpServers.docskit = { command: 'keep-me' }
   config.otherConfig = { keep: true }
   writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`)
 
@@ -99,7 +99,7 @@ test('Cursor MCP uninstall removes only the Codegenkit entry', () => {
   assert.equal(applied.removed, true)
   const remaining = JSON.parse(readFileSync(file, 'utf8'))
   assert.equal(remaining.mcpServers.codegenkit, undefined)
-  assert.deepEqual(remaining.mcpServers.hubdocs, { command: 'keep-me' })
+  assert.deepEqual(remaining.mcpServers.docskit, { command: 'keep-me' })
   assert.deepEqual(remaining.otherConfig, { keep: true })
 })
 
@@ -154,7 +154,7 @@ test('CLI deinit is repo-local and uninstall is global from anywhere', () => {
     `${JSON.stringify({
       mcpServers: {
         codegenkit: { command: 'remove-me' },
-        hubdocs: { command: 'keep-me' },
+        docskit: { command: 'keep-me' },
       },
     })}\n`,
   )
@@ -186,5 +186,5 @@ test('CLI deinit is repo-local and uninstall is global from anywhere', () => {
   assert.equal(existsSync(path.join(state, 'installs.json')), false)
   const globalMcp = JSON.parse(readFileSync(path.join(fakeHome, '.cursor', 'mcp.json'), 'utf8'))
   assert.equal(globalMcp.mcpServers.codegenkit, undefined)
-  assert.deepEqual(globalMcp.mcpServers.hubdocs, { command: 'keep-me' })
+  assert.deepEqual(globalMcp.mcpServers.docskit, { command: 'keep-me' })
 })

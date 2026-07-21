@@ -233,12 +233,12 @@ test('dotnet adapters report missing runtime and bundled unit limitation', () =>
 
 test('Nuxt and Next ID resolution require ir/spec.yaml', () => {
   const docsRoot = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-gen-spec-'))
-  const root = path.join(docsRoot, 'product', 'fixture')
+  const root = path.join(docsRoot, 'Surfaces', 'fixture')
   mkdirSync(path.join(docsRoot, 'registries'), { recursive: true })
   mkdirSync(root, { recursive: true })
   writeFileSync(
     path.join(docsRoot, 'registries', 'docs-index.json'),
-    JSON.stringify({ version: 1, codeIds: { 'W-FIXTURE': 'product/fixture' } }),
+    JSON.stringify({ version: 1, codeIds: { 'W-FIXTURE': 'Surfaces/fixture' } }),
   )
   writeFileSync(path.join(root, 'feature.bundle.yaml'), 'id: W-FIXTURE\n')
   writeFileSync(path.join(root, 'spec.yaml'), 'id: legacy\n')
@@ -301,7 +301,7 @@ test('Nuxt and Next adapter dry-runs do not write generated files', () => {
   for (const adapter of ['nuxt4', 'nextjs']) {
     const root = mkdtempSync(path.join(os.tmpdir(), `codegenkit-${adapter}-dry-`))
     const docsRoot = path.join(root, 'docs')
-    const featureDir = path.join(docsRoot, 'product', 'fixture')
+    const featureDir = path.join(docsRoot, 'Surfaces', 'fixture')
     const irDir = path.join(featureDir, 'ir')
     mkdirSync(path.join(root, 'registries'), { recursive: true })
     mkdirSync(irDir, { recursive: true })
@@ -376,11 +376,11 @@ test('fe init syncs skills and forbids docs assumptions', () => {
     projectRoot: root,
     type: 'fe',
     feAdapter: 'nuxt4',
-    docsRoot: '/tmp/docs-hub-example',
+    docsRoot: '/tmp/docskit-example',
   })
   const cfg = JSON.parse(readFileSync(mcp.path, 'utf8'))
   assert.equal(cfg.mcpServers.codegenkit.env.CODEGENKIT_FE_ADAPTER, 'nuxt4')
-  assert.equal(cfg.mcpServers.codegenkit.env.CODEGENKIT_DOCS_ROOT, '/tmp/docs-hub-example')
+  assert.equal(cfg.mcpServers.codegenkit.env.CODEGENKIT_DOCS_ROOT, '/tmp/docskit-example')
 })
 
 
@@ -1004,8 +1004,8 @@ test('contract-gen dry-run / force / registry / docs-root discovery', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'codegenkit-contract-'))
   installHarness({ projectRoot: root, type: 'fe', feAdapter: 'nextjs' })
 
-  const docsRoot = path.join(root, 'docs-hub')
-  const irDir = path.join(docsRoot, 'product', 'components', 'CMP-01', 'code', 'W-01', 'ir')
+  const docsRoot = path.join(root, 'docskit')
+  const irDir = path.join(docsRoot, 'Surfaces', 'Modules', 'CMP-01', 'Functions', 'W-01', 'ir')
   mkdirSync(irDir, { recursive: true })
   const spec = path.join(irDir, 'spec.yaml')
   copyFileSync('test/fixtures/contractgen/ir/spec.yaml', spec)

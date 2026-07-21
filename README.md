@@ -16,7 +16,7 @@ Docs/tests init is **forbidden**. Choose a lane and stack (interactive
 
 ```bash
 codegenkit init
-codegenkit init --type=fe --adapter=nuxt4 --docs-root=/path/to/docs-hub --yes
+codegenkit init --type=fe --adapter=nuxt4 --docs-root=/path/to/docskit --yes
 codegenkit init --type=be --adapter=fastapi --yes
 codegenkit init --type=be --adapter=laravel --yes
 codegenkit init --type=fe --adapter=dotnet-line --yes
@@ -25,7 +25,7 @@ codegenkit init --type=fullstack --fe-adapter=nextjs --be-adapter=fastapi --yes
 codegenkit init --type=fe --adapter=nuxt4 --target=none --no-codegraph --yes
 ```
 
-Evidence routing: architecture/C4 → Hubdocs (`HUBDOCS_ROOT`); IR/registry/gen →
+Evidence routing: architecture/C4 → Docskit (`DOCSKIT_ROOT`); IR/registry/gen →
 `CODEGENKIT_DOCS_ROOT`; symbols/call-graph for repo X → Platform DNA-wired
 `codegraph-<key>`; ArtifactGraph stays local-only. Cross-repo CodeGraph MCP is
 wired by Platform DNA (`--codegraph` / `--no-codegraph`), never by Codegenkit.
@@ -77,8 +77,8 @@ Executable tools:
 - `api_registry_validate` / `api_unit_registry_validate`
 - `common_registry_validate` (CLI: `codegenkit common-registry`)
 
-Set `CODEGENKIT_DOCS_ROOT` (or `--docs-root`). No sibling docs hub is assumed.
-ID-based FE generation requires the docs-hub Code artifact at `ir/spec.yaml`;
+Set `CODEGENKIT_DOCS_ROOT` (or `--docs-root`). No sibling docskit is assumed.
+ID-based FE generation requires the docskit Code artifact at `ir/spec.yaml` or `spec.yaml`;
 bundle YAML is never accepted as a codegen fallback.
 
 The published `schemas/common-registry.schema.json` describes the installed

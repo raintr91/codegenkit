@@ -12,7 +12,7 @@ Not synced for `dotnet-line` (WinForms contracts live outside Zod `models/`).
 ## Scope
 
 Write/update **Zod schemas + TS types** under `models/` and `validations/` from
-docs-hub Code `ir/spec.yaml` (entities + api). **Keep contract keys unchanged.**
+docskit Code `ir/spec.yaml` (entities + api). **Keep contract keys unchanged.**
 
 | Load | Do not load |
 |------|-------------|

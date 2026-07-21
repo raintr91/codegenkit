@@ -13,7 +13,7 @@ Interactive (TTY) wizard order:
 codegenkit init
 
 # CI / non-TTY (flags + --yes)
-codegenkit init --type=fe --adapter=nuxt4 --target=cursor --docs-root=/path/to/docs-hub --yes
+codegenkit init --type=fe --adapter=nuxt4 --target=cursor --docs-root=/path/to/docskit --yes
 codegenkit init --type=fe --adapter=nextjs --yes
 codegenkit init --type=be --adapter=fastapi --yes
 codegenkit init --type=be --adapter=laravel --yes
@@ -41,7 +41,7 @@ generation is invoked via the toolkit CLI (`codegenkit gen`, `unit-gen`,
 `api-gen`, `contract-gen`, …). Absent historical `portal:*` / `api:*` wrappers
 are fine.
 
-For FE, pass `--docs-root=/absolute/path/to/docs-hub`. Init stores the
+For FE, pass `--docs-root=/absolute/path/to/docskit`. Init stores the
 member-selected path as `CODEGENKIT_DOCS_ROOT`; this is the canonical bridge to
 docs IR/registries. ArtifactGraph in FE remains local-only and does not replace
 that pointer.

@@ -18,10 +18,10 @@ function resolveIrGlobRoots(options) {
   if (options.yamlRoot) {
     roots.push(path.resolve(options.yamlRoot))
   }
-  const docsRoot = process.env.CODEGENKIT_DOCS_ROOT || process.env.DOCS_HUB_ROOT
+  const docsRoot = process.env.CODEGENKIT_DOCS_ROOT || process.env.DOCSKIT_ROOT
   if (docsRoot) {
     const abs = path.resolve(docsRoot)
-    roots.push(path.join(abs, 'product'))
+    roots.push(path.join(abs, 'Surfaces'))
     roots.push(abs)
     roots.push(path.join(abs, 'docs', 'features', 'yaml'))
   }
@@ -44,7 +44,7 @@ async function listIrSpecFiles(dir) {
       files.push(...(await listIrSpecFiles(entryPath)))
       continue
     }
-    if (entry.isFile() && entry.name === 'spec.yaml' && entryPath.includes(`${path.sep}ir${path.sep}`)) {
+    if (entry.isFile() && entry.name === 'spec.yaml' && (entryPath.includes(`${path.sep}ir${path.sep}`) || entryPath.includes(`${path.sep}Functions${path.sep}`))) {
       files.push(entryPath)
     }
   }
@@ -60,7 +60,7 @@ async function resolveSpecPaths(options) {
     if (discovered.length > 0) return discovered
   }
   throw new Error(
-    'No ir/spec.yaml found — pass --spec <path>, --yaml-root <docs-hub>, or set CODEGENKIT_DOCS_ROOT',
+    'No ir/spec.yaml found — pass --spec <path>, --yaml-root <docskit>, or set CODEGENKIT_DOCS_ROOT',
   )
 }
 

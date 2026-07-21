@@ -26,7 +26,7 @@ else: scoped contract-to-code comparison
 if codegraph-<repo-key> for this checkout: callers/routes/jobs/listeners
 else: targeted repository search
 
-architecture IDs / C4 → Hubdocs (HUBDOCS_ROOT), never CodeGraph
+architecture IDs / C4 → Docskit (DOCSKIT_ROOT), never CodeGraph
 ```
 
 Missing accelerators never block the grill. Complete each scoped model or

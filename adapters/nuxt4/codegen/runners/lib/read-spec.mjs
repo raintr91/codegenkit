@@ -24,7 +24,7 @@ export async function readSpecFile(specPath) {
   if (!spec.codegen?.profile) {
     throw new Error(
       `Missing codegen.profile in ${specPath}. Spec chưa portal-gen-ready — chạy /dev-grill-docs trước /prototype. ` +
-        'Xem .cursor/extracts/codegen/readiness.md và docs-hub templates/feature.bundle.yaml'
+        'Xem .cursor/extracts/codegen/readiness.md và docskit templates/feature.bundle.yaml'
     )
   }
 

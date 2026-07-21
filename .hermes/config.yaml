@@ -1,0 +1,4 @@
+mcp_servers: {}
+platform_toolsets:
+  cli:
+    - hermes-cli

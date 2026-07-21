@@ -37,7 +37,7 @@ codegenkit contract-registry
 
 ## Route
 
-Architecture/C4 → Hubdocs (`HUBDOCS_ROOT`); IR via explicit `--spec` /
+Architecture/C4 → Docskit (`DOCSKIT_ROOT`); IR via explicit `--spec` /
 `CODEGENKIT_DOCS_ROOT` when configured — never ArtifactGraph as the docs
 bridge. This-repo conventions → local CodeGraph if present; other repo X →
 only Platform DNA-wired `codegraph-<key>`. ArtifactGraph = local allowlist

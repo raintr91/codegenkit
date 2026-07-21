@@ -39,8 +39,49 @@ export function resolveProjectRoot(repoRoot, projectId) {
 export function loadDocsIndex(docsRoot) {
   const file = path.join(docsRoot, 'registries', 'docs-index.json')
   const idx = loadJson(file)
-  if (!idx) throw new Error(`Missing ${file}`)
+  if (!idx) {
+    return buildDocsIndexFallback(docsRoot)
+  }
   return idx
+}
+
+function buildDocsIndexFallback(docsRoot) {
+  const codeIds = {}
+  const components = []
+  const surfacesDir = path.join(docsRoot, 'Surfaces')
+
+  function scanSurfaces(dir) {
+    if (!existsSync(dir)) return
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        const fullPath = path.join(dir, entry.name)
+        if (entry.name.startsWith('CMP-')) {
+          const cmp = { id: entry.name, slug: entry.name.toLowerCase(), screens: [], apis: [] }
+          components.push(cmp)
+          const fnDir = path.join(fullPath, 'Functions')
+          if (existsSync(fnDir)) {
+            for (const fnEntry of readdirSync(fnDir, { withFileTypes: true })) {
+              if (fnEntry.isDirectory() && !fnEntry.name.startsWith('.')) {
+                if (fnEntry.name.startsWith('W-') || fnEntry.name.startsWith('UI-')) {
+                  cmp.screens.push(fnEntry.name)
+                  codeIds[fnEntry.name] = path.relative(docsRoot, path.join(fnDir, fnEntry.name)).split(path.sep).join('/')
+                } else if (fnEntry.name.startsWith('API-')) {
+                  cmp.apis.push(fnEntry.name)
+                  codeIds[fnEntry.name] = path.relative(docsRoot, path.join(fnDir, fnEntry.name)).split(path.sep).join('/')
+                }
+              }
+            }
+          }
+        } else if (entry.name.startsWith('W-') || entry.name.startsWith('UI-') || entry.name.startsWith('API-')) {
+          codeIds[entry.name] = path.relative(docsRoot, fullPath).split(path.sep).join('/')
+        }
+        scanSurfaces(fullPath)
+      }
+    }
+  }
+
+  scanSurfaces(surfacesDir)
+  return { version: 1, codeIds, components }
 }
 
 export function loadTestsIndex(testsRoot) {
@@ -95,6 +136,8 @@ export function preferGenSpec(codeDir) {
   if (!codeDir || !existsSync(codeDir)) return null
   const ir = path.join(codeDir, 'ir', 'spec.yaml')
   if (existsSync(ir)) return ir
+  const spec = path.join(codeDir, 'spec.yaml')
+  if (existsSync(spec)) return spec
   return null
 }
 

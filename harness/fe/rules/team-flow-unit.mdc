@@ -9,7 +9,7 @@ alwaysApply: false
 Skills: `.cursor/skills/unit/SKILL.md` · `.cursor/skills/grill-unit/SKILL.md`  
 Extract: `.cursor/extracts/portal-unit-workflow.md`, `portal-unit-test-tags.md`, `verify-gate.md`
 
-Canonical IR via `CODEGENKIT_DOCS_ROOT`; architecture → Hubdocs; cross-repo
+Canonical IR via `CODEGENKIT_DOCS_ROOT`; architecture → Docskit; cross-repo
 symbols → Platform DNA-wired `codegraph-<key>`; ArtifactGraph local-only.
 
 ## `/unit`

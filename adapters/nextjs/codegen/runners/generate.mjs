@@ -16,15 +16,15 @@ const root = path.resolve(process.env.CODEGENKIT_ROOT || process.cwd())
 const yamlRootFlag = process.argv.includes('--yaml-root')
   ? process.argv[process.argv.indexOf('--yaml-root') + 1]
   : null
-function resolveDocsProductRoot() {
-  const env = process.env.CODEGENKIT_DOCS_ROOT || process.env.DOCS_HUB_ROOT
-  if (env) return path.join(path.resolve(env), 'product')
+function resolveDocsSurfacesRoot() {
+  const env = process.env.CODEGENKIT_DOCS_ROOT || process.env.DOCSKIT_ROOT
+  if (env) return path.join(path.resolve(env), 'Surfaces')
   if (process.env.CODEGENKIT_YAML_ROOT) return path.resolve(process.env.CODEGENKIT_YAML_ROOT)
   try {
-    return path.join(resolveProjectRoot(root, 'docs'), 'product')
+    return path.join(resolveProjectRoot(root, 'docs'), 'Surfaces')
   } catch {
     try {
-      return path.join(resolveProjectRoot(root, 'base-docs'), 'product')
+      return path.join(resolveProjectRoot(root, 'base-docs'), 'Surfaces')
     } catch {
       throw new Error(
         'Set CODEGENKIT_DOCS_ROOT or pass --yaml-root; no sibling docs hub is assumed',
@@ -32,7 +32,7 @@ function resolveDocsProductRoot() {
     }
   }
 }
-const IR_SPEC_GLOB_ROOT = path.resolve(yamlRootFlag ?? resolveDocsProductRoot())
+const IR_SPEC_GLOB_ROOT = path.resolve(yamlRootFlag ?? resolveDocsSurfacesRoot())
 
 function parseArgs(argv) {
   const options = { dryRun: false, force: false, spec: null, all: false, id: null }
@@ -66,7 +66,7 @@ async function listIrSpecFiles(dir) {
       files.push(...(await listIrSpecFiles(entryPath)))
       continue
     }
-    if (entry.isFile() && entry.name === 'spec.yaml' && entryPath.includes(`${path.sep}ir${path.sep}`)) {
+    if (entry.isFile() && entry.name === 'spec.yaml' && (entryPath.includes(`${path.sep}ir${path.sep}`) || entryPath.includes(`${path.sep}Functions${path.sep}`))) {
       files.push(entryPath)
     }
   }
@@ -204,9 +204,9 @@ async function main() {
   process.exit(failed > 0 ? 1 : 0)
 }
 
-/** Docs markdown render stays on the docs hub / Bundlekit — never assume sibling checkout. */
+/** Docs markdown render stays on the docs hub / Docskit — never assume sibling checkout. */
 function runDocsRender() {
-  console.log('  docs:render: handoff to docs hub / Bundlekit (not executed from Codegenkit)')
+  console.log('  docs:render: handoff to docs hub / Docskit (not executed from Codegenkit)')
 }
 
 main().catch((error) => {

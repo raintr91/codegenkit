@@ -11,11 +11,3 @@ workspace.path
 # Generated — node scripts/platform-workspace-from-repos.mjs --group=<lane>
 platform-*.code-workspace
 .cursor/
-.codegenkit/
-.claude.json
-.claude/
-.codex/
-opencode.jsonc
-.hermes/
-.gemini/
-.kiro/
