@@ -32,11 +32,11 @@ const files = [
 
 const replacements = [
   { from: /DOCS_HUB_ROOT/g, to: "DOCSKIT_ROOT" },
-  { from: /HUBDOCS_ROOT/g, to: "DOCSKIT_ROOT" },
+  { from: /DOCSKIT_ROOT/g, to: "DOCSKIT_ROOT" },
   { from: /docs-hub/g, to: "docskit" },
-  { from: /hubdocs/g, to: "docskit" },
-  { from: /Hubdocs/g, to: "Docskit" },
-  { from: /\.hubdocs/g, to: ".docskit" }
+  { from: /docskit/g, to: "docskit" },
+  { from: /Docskit/g, to: "Docskit" },
+  { from: /\.docskit/g, to: ".docskit" }
 ];
 
 files.forEach(file => {

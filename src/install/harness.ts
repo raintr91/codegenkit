@@ -389,7 +389,7 @@ export function installHarness(opts: {
     conflicts: [] as string[],
     skipped: [] as string[],
     stale: [] as string[],
-    gitignore: [] as string[],
+    gitignore: [] as OwnedGitignoreEntry[],
   }
   const files: InstallManifest['files'] = {}
   const sources = managedSources(opts.type, adapters)
