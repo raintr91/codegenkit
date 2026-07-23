@@ -5,7 +5,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
@@ -98,6 +98,7 @@ export interface InstallAgentsResult {
 export interface UninstallAgentsResult {
   dryRun: boolean
   removed: string[]
+  removedPaths: string[]
   absent: string[]
   preserved: string[]
 }
@@ -416,7 +417,14 @@ function removeJsonMcp(file: string, dryRun: boolean, expectedHash?: string): 'r
   if (expectedHash && mcpEntryHash(servers[MCP_NAME]) !== expectedHash) return 'preserved'
   if (!dryRun) {
     delete servers[MCP_NAME]
-    writeFileSync(file, `${JSON.stringify(document, null, 2)}\n`, 'utf8')
+    if (Object.keys(servers).length === 0) {
+      delete document.mcpServers
+    }
+    if (Object.keys(document).length === 0) {
+      rmSync(file, { force: true })
+    } else {
+      writeFileSync(file, `${JSON.stringify(document, null, 2)}\n`, 'utf8')
+    }
   }
   return 'removed'
 }
@@ -441,7 +449,14 @@ function removeOpencode(file: string, dryRun: boolean): boolean {
   if (!mcp || !(MCP_NAME in mcp)) return false
   if (!dryRun) {
     delete mcp[MCP_NAME]
-    writeFileSync(file, `${JSON.stringify(document, null, 2)}\n`, 'utf8')
+    if (Object.keys(mcp).length === 0) {
+      delete document.mcp
+    }
+    if (Object.keys(document).filter(k => k !== '$schema').length === 0) {
+      rmSync(file, { force: true })
+    } else {
+      writeFileSync(file, `${JSON.stringify(document, null, 2)}\n`, 'utf8')
+    }
   }
   return true
 }
@@ -498,6 +513,7 @@ export function uninstallAgents(opts: {
   const root = path.resolve(opts.projectRoot)
   const dryRun = !opts.yes
   const removed: string[] = []
+  const removedPaths: string[] = []
   const absent: string[] = []
   const preserved: string[] = []
 
@@ -513,28 +529,39 @@ export function uninstallAgents(opts: {
     const expectedHash = recorded?.sha256
 
     if (agent === 'codex') {
-      if (removeCodex(file, dryRun)) removed.push(`${agent}: ${file}`)
-      else absent.push(`${agent}: no ${MCP_NAME} entry`)
+      if (removeCodex(file, dryRun)) {
+        removed.push(`${agent}: ${file}`)
+        removedPaths.push(file)
+      } else absent.push(`${agent}: no ${MCP_NAME} entry`)
     } else if (agent === 'opencode') {
-      if (removeOpencode(file, dryRun)) removed.push(`${agent}: ${file}`)
-      else absent.push(`${agent}: no ${MCP_NAME} entry`)
+      if (removeOpencode(file, dryRun)) {
+        removed.push(`${agent}: ${file}`)
+        removedPaths.push(file)
+      } else absent.push(`${agent}: no ${MCP_NAME} entry`)
     } else if (agent === 'hermes') {
-      if (removeHermes(file, dryRun)) removed.push(`${agent}: ${file}`)
-      else absent.push(`${agent}: no ${MCP_NAME} entry`)
+      if (removeHermes(file, dryRun)) {
+        removed.push(`${agent}: ${file}`)
+        removedPaths.push(file)
+      } else absent.push(`${agent}: no ${MCP_NAME} entry`)
     } else {
       const outcome = removeJsonMcp(file, dryRun, expectedHash)
-      if (outcome === 'removed') removed.push(`${agent}: ${file}`)
-      else if (outcome === 'preserved') preserved.push(`${agent}: ${file}`)
+      if (outcome === 'removed') {
+        removed.push(`${agent}: ${file}`)
+        removedPaths.push(file)
+      } else if (outcome === 'preserved') preserved.push(`${agent}: ${file}`)
       else absent.push(`${agent}: no ${MCP_NAME} entry`)
     }
 
     if (agent === 'claude') {
       const permissions = removeClaudePermissions(root, dryRun)
-      if (permissions) removed.push(`claude: ${permissions} (permissions)`)
+      if (permissions) {
+        removed.push(`claude: ${permissions} (permissions)`)
+        removedPaths.push(permissions.replace(/ \(permissions\)$/, ''))
+      }
     }
   }
 
-  return { dryRun, removed, absent, preserved }
+  return { dryRun, removed, removedPaths, absent, preserved }
 }
 
 /** Read current JSON MCP entry hash (Cursor and similar). */

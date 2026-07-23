@@ -305,21 +305,42 @@ function profiles(type: CodegenType): Array<'fe' | 'be' | 'docs'> {
   return type === 'fullstack' ? ['fe', 'be'] : [type]
 }
 
+function targetPrefixesForAgents(targets?: string[]): string[] {
+  if (!targets || targets.length === 0) return ['.cursor']
+  const prefixes = new Set<string>()
+  for (const agent of targets) {
+    if (agent === 'cursor' || agent === 'opencode') prefixes.add('.cursor')
+    else if (agent === 'kiro') prefixes.add('.kiro')
+    else if (agent === 'kilo') prefixes.add('.kilocode')
+    else if (agent === 'claude') prefixes.add('.claude')
+    else if (agent === 'gemini' || agent === 'antigravity') prefixes.add('.gemini')
+    else if (agent === 'codex') prefixes.add('.codex')
+    else if (agent === 'hermes') prefixes.add('.hermes')
+  }
+  return prefixes.size > 0 ? Array.from(prefixes) : ['.cursor']
+}
+
 function managedSources(
   type: CodegenType,
   adapters: InstallManifest['adapters'],
+  targets?: string[],
 ): Array<{ root: string; targetPrefix: string }> {
   const selectedProfiles = profiles(type)
-  const sources = [
-    {
+  const prefixes = targetPrefixesForAgents(targets)
+  const sources: Array<{ root: string; targetPrefix: string }> = []
+  
+  for (const targetPrefix of prefixes) {
+    sources.push({
       root: path.join(packageRoot(), 'harness', 'shared'),
-      targetPrefix: '.cursor',
-    },
-    ...selectedProfiles.map((profile) => ({
-      root: path.join(packageRoot(), 'harness', profile),
-      targetPrefix: '.cursor',
-    })),
-  ]
+      targetPrefix,
+    })
+    for (const profile of selectedProfiles) {
+      sources.push({
+        root: path.join(packageRoot(), 'harness', profile),
+        targetPrefix,
+      })
+    }
+  }
   for (const adapter of [
     ...(selectedProfiles.includes('fe') &&
     (adapters.fe === 'dotnet-line' || adapters.fe === 'nextjs')
@@ -348,9 +369,9 @@ function managedSources(
   return sources
 }
 
-function currentTargets(manifest: Pick<InstallManifest, 'type' | 'adapters'>): Set<string> {
-  const targets = new Set<string>()
-  for (const entry of managedSources(manifest.type, manifest.adapters)) {
+function currentTargets(manifest: Pick<InstallManifest, 'type' | 'adapters'>, targets?: string[]): Set<string> {
+  const selectedTargets = new Set<string>()
+  for (const entry of managedSources(manifest.type, manifest.adapters, targets)) {
     for (const source of walk(entry.root)) {
       const rel = path.relative(entry.root, source)
       if (
@@ -362,10 +383,10 @@ function currentTargets(manifest: Pick<InstallManifest, 'type' | 'adapters'>): S
       ) {
         continue
       }
-      targets.add(path.join(entry.targetPrefix, rel).split(path.sep).join('/'))
+      selectedTargets.add(path.join(entry.targetPrefix, rel).split(path.sep).join('/'))
     }
   }
-  return targets
+  return selectedTargets
 }
 
 export function installHarness(opts: {
@@ -376,6 +397,7 @@ export function installHarness(opts: {
   force?: boolean
   gitignoreEntries?: OwnedGitignoreEntry[]
   mcp?: Record<string, AgentMcpOwnership>
+  targets?: string[]
 }): HarnessInstallResult {
   const root = path.resolve(opts.projectRoot)
   const previous = readManifest(root)
@@ -392,7 +414,7 @@ export function installHarness(opts: {
     gitignore: [] as OwnedGitignoreEntry[],
   }
   const files: InstallManifest['files'] = {}
-  const sources = managedSources(opts.type, adapters)
+  const sources = managedSources(opts.type, adapters, opts.targets)
 
   for (const entry of sources) {
     const sourceRoot = entry.root
@@ -700,6 +722,7 @@ function pruneEmptyDirs(root: string, files: string[]): void {
 export function uninstallHarness(opts: {
   projectRoot?: string
   yes?: boolean
+  mcpRemovedPaths?: string[]
 } = {}): HarnessUninstallResult {
   const root = path.resolve(opts.projectRoot ?? process.cwd())
   const manifest = readManifest(root)
@@ -767,7 +790,7 @@ export function uninstallHarness(opts: {
     rmSync(manifestPath)
     result.manifestRemoved = true
     forgetInstall(root)
-    pruneEmptyDirs(root, [...result.removed, manifestPath])
+    pruneEmptyDirs(root, [...result.removed, manifestPath, ...(opts.mcpRemovedPaths ?? [])])
   }
   return result
 }

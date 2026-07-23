@@ -169,7 +169,7 @@ function repoTargets(flags: UninstallFlags): string[] {
 
 function runUninstallScope(scope: UninstallScope, flags: UninstallFlags): void {
   const cwd = path.resolve(flags.projectRoot ?? process.cwd())
-  const doMcpLocal = (root: string): void => {
+  const doMcpLocal = (root: string): string[] => {
     const manifest = readInstallManifest(root)
     const result = uninstallAgents({
       projectRoot: root,
@@ -182,12 +182,13 @@ function runUninstallScope(scope: UninstallScope, flags: UninstallFlags): void {
     for (const line of result.preserved) {
       console.log(`  preserve modified MCP: ${line}`)
     }
+    return result.removedPaths
   }
   const doHarness = (root: string): void => {
     console.log(`repo: ${root}`)
     // Unwire MCP first while the install manifest (and mcp ownership) still exists.
-    doMcpLocal(root)
-    const result = uninstallHarness({ projectRoot: root, yes: flags.yes })
+    const mcpRemovedPaths = doMcpLocal(root)
+    const result = uninstallHarness({ projectRoot: root, yes: flags.yes, mcpRemovedPaths })
     for (const file of result.removable) {
       console.log(`  ${flags.yes ? 'removed' : 'would remove'}: ${file}`)
     }
@@ -379,6 +380,7 @@ async function main(): Promise<void> {
       force: has('--force'),
       gitignoreEntries: ignoreEntries,
       mcp: agents.mcp,
+      targets: agents.targets,
     })
     for (const file of harness.written) console.log(`  wrote: ${file}`)
     for (const file of harness.unchanged) console.log(`  unchanged: ${file}`)

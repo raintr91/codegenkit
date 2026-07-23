@@ -1,10 +1,17 @@
 {
   "schemaVersion": 1,
   "package": "@platform/codegenkit",
-  "version": "0.6.0",
-  "types": ["fe", "be", "fullstack"],
+  "version": "0.6.1",
+  "types": [
+    "fe",
+    "be",
+    "fullstack"
+  ],
   "requires": [],
-  "optional": ["@platform/artifactgraph", "codegraph"],
+  "optional": [
+    "@platform/artifactgraph",
+    "codegraph"
+  ],
   "tools": [
     "codegen_gen",
     "codegen_gen_dry",
@@ -21,12 +28,30 @@
     "common_registry_validate"
   ],
   "skillsByType": {
-    "fe": ["prototype", "wire", "unit", "grill-prototype", "grill-unit", "model"],
-    "be": ["api", "grill-api"]
+    "fe": [
+      "prototype",
+      "wire",
+      "unit",
+      "grill-prototype",
+      "grill-unit",
+      "model"
+    ],
+    "be": [
+      "api",
+      "grill-api"
+    ]
   },
   "adaptersByType": {
-    "fe": ["nuxt4", "nextjs", "dotnet-line"],
-    "be": ["fastapi", "laravel", "dotnet-integration"]
+    "fe": [
+      "nuxt4",
+      "nextjs",
+      "dotnet-line"
+    ],
+    "be": [
+      "fastapi",
+      "laravel",
+      "dotnet-integration"
+    ]
   },
   "compatibility": {
     "node": ">=22",
