@@ -3,7 +3,13 @@ set -euo pipefail
 REPO="${CODEGENKIT_REPO:-raintr91/codegenkit}"
 INSTALL_DIR="${CODEGENKIT_INSTALL_DIR:-$HOME/.codegenkit}"
 BIN_DIR="${CODEGENKIT_BIN_DIR:-$HOME/.local/bin}"
-REF="${CODEGENKIT_REF:-v0.6.0}"
+REF="${CODEGENKIT_REF:-}"
+if [ -z "$REF" ]; then
+  REF=$(git ls-remote --tags --sort="v:refname" "https://github.com/$REPO.git" 2>/dev/null | grep -v '\^{}' | awk -F/ '{print $3}' | tail -n1)
+  if [ -z "$REF" ]; then
+    REF="main"
+  fi
+fi
 if [ "${1:-}" = "--uninstall" ]; then
   rm -f "$BIN_DIR/codegenkit" "$BIN_DIR/codegenkit-mcp"
   rm -rf "$INSTALL_DIR"
