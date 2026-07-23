@@ -1,6 +1,6 @@
 param(
   [string]$InstallDir = "$HOME\.codegenkit",
-  [string]$Ref = "v0.7.0",
+  [string]$Ref = "",
   [ValidateSet("fe", "be", "fullstack")]
   [string]$Type = "fe",
   [ValidateSet("nuxt4", "nextjs", "dotnet-line")]
@@ -19,6 +19,16 @@ if ($Uninstall) {
   Remove-Item $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
   Write-Host "Codegenkit uninstalled."
   exit 0
+}
+
+if ([string]::IsNullOrEmpty($Ref)) {
+  $tags = git ls-remote --tags --sort="v:refname" "https://github.com/raintr91/codegenkit.git" 2>$null
+  $latestTag = $tags | Where-Object { $_ -match "refs/tags/" -and $_ -notmatch "\^\{\}" } | Select-Object -Last 1
+  if ($latestTag) {
+    $Ref = $latestTag -replace "^.*\srefs/tags/", ""
+  } else {
+    $Ref = "main"
+  }
 }
 
 $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("codegenkit-" + [guid]::NewGuid())

@@ -40,6 +40,18 @@ export const AGENT_IDS: AgentId[] = [
   'kilo',
 ]
 
+export const AGENT_DIRS: Record<AgentId, string[]> = {
+  claude: ['.claude'],
+  cursor: ['.cursor'],
+  codex: ['.codex'],
+  opencode: ['.opencode'],
+  hermes: ['.hermes'],
+  gemini: ['.gemini'],
+  antigravity: ['.agents', '.gemini'],
+  kiro: ['.kiro'],
+  kilo: ['.kilocode'],
+}
+
 export const AGENT_LABEL: Record<AgentId, string> = {
   claude: 'Claude Code',
   cursor: 'Cursor',

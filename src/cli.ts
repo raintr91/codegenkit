@@ -371,6 +371,7 @@ async function main(): Promise<void> {
       written: agents.written.map((entry) => entry.path),
       harnessInstalled: true,
       beAdapter: selection.beAdapter,
+      targets: agents.targets,
     })
     const harness = installHarness({
       projectRoot: root,

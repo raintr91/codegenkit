@@ -1,5 +1,6 @@
 import { existsSync, lstatSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { AGENT_DIRS, type AgentId } from './agents.js'
 
 /**
  * Shared `.gitignore` contract (Platform DNA semantics):
@@ -40,6 +41,7 @@ export interface GeneratedTargetInput {
   harnessInstalled: boolean
   /** When set to laravel, also claim the synced PHP unitgen tree. */
   beAdapter?: string
+  targets?: string[]
 }
 
 const LEGACY_START = '# >>> codegenkit generated files'
@@ -226,7 +228,12 @@ export function generatedTargets(input: GeneratedTargetInput): OwnedGitignoreEnt
   }
 
   if (input.harnessInstalled) {
-    add('.cursor/', true)
+    const agentDirList =
+      input.targets?.flatMap((target) => AGENT_DIRS[target as AgentId] || []) || []
+    const dirs = agentDirList.length > 0 ? Array.from(new Set(agentDirList)) : ['.cursor']
+    for (const dir of dirs) {
+      add(`${dir}/`, true)
+    }
     add('.codegenkit/', false)
   }
   if (input.beAdapter === 'laravel') {
@@ -236,7 +243,10 @@ export function generatedTargets(input: GeneratedTargetInput): OwnedGitignoreEnt
   for (const file of input.written) {
     const pattern = ignorePatternForLocalPath(input.projectRoot, file)
     if (!pattern) continue
-    const shared = canonicalGitignorePattern(pattern) === canonicalGitignorePattern('.cursor/')
+    const allowedDirs = Array.from(new Set(Object.values(AGENT_DIRS).flat()))
+    const shared = allowedDirs.some(dir =>
+      canonicalGitignorePattern(pattern) === canonicalGitignorePattern(`${dir}/`)
+    )
     add(pattern, shared)
   }
 

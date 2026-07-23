@@ -18,7 +18,7 @@ import {
   type CodegenType,
   type FeAdapterId,
 } from '../config/project-root.js'
-import type { AgentMcpOwnership } from './agents.js'
+import { AGENT_DIRS, type AgentId, type AgentMcpOwnership } from './agents.js'
 import {
   canonicalGitignorePattern,
   ensureGitignoreEntries,
@@ -306,18 +306,9 @@ function profiles(type: CodegenType): Array<'fe' | 'be' | 'docs'> {
 }
 
 function targetPrefixesForAgents(targets?: string[]): string[] {
-  if (!targets || targets.length === 0) return ['.cursor']
-  const prefixes = new Set<string>()
-  for (const agent of targets) {
-    if (agent === 'cursor' || agent === 'opencode') prefixes.add('.cursor')
-    else if (agent === 'kiro') prefixes.add('.kiro')
-    else if (agent === 'kilo') prefixes.add('.kilocode')
-    else if (agent === 'claude') prefixes.add('.claude')
-    else if (agent === 'gemini' || agent === 'antigravity') prefixes.add('.gemini')
-    else if (agent === 'codex') prefixes.add('.codex')
-    else if (agent === 'hermes') prefixes.add('.hermes')
-  }
-  return prefixes.size > 0 ? Array.from(prefixes) : ['.cursor']
+  const agentDirList =
+    targets?.flatMap((target) => AGENT_DIRS[target as AgentId] || []) || []
+  return agentDirList.length > 0 ? Array.from(new Set(agentDirList)) : ['.cursor']
 }
 
 function managedSources(

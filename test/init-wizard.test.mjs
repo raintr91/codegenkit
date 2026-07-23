@@ -139,6 +139,7 @@ test('multi-agent local paths write only selected agents and ignore actual-writt
     projectRoot: root,
     written: agents.written.map((w) => w.path),
     harnessInstalled: true,
+    targets: agents.targets,
   })
   installHarness({
     projectRoot: root,
@@ -249,6 +250,7 @@ test('multi-toolkit .cursor survival: deinit keeps shared, removes exclusive', (
       projectRoot: root,
       written: agents.written.map((w) => w.path),
       harnessInstalled: true,
+      targets: agents.targets,
     }),
     mcp: agents.mcp,
   })
@@ -285,6 +287,7 @@ test('modified MCP entry is preserved on uninstall', () => {
       projectRoot: root,
       written: agents.written.map((w) => w.path),
       harnessInstalled: true,
+      targets: agents.targets,
     }),
     mcp: agents.mcp,
   })
@@ -318,6 +321,7 @@ test('status reports missing gitignore entries', () => {
       projectRoot: root,
       written: agents.written.map((w) => w.path),
       harnessInstalled: true,
+      targets: agents.targets,
     }),
     mcp: agents.mcp,
   })

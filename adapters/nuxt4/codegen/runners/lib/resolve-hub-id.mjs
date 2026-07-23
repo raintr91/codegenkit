@@ -136,8 +136,6 @@ export function preferGenSpec(codeDir) {
   if (!codeDir || !existsSync(codeDir)) return null
   const ir = path.join(codeDir, 'ir', 'spec.yaml')
   if (existsSync(ir)) return ir
-  const spec = path.join(codeDir, 'spec.yaml')
-  if (existsSync(spec)) return spec
   return null
 }
 
